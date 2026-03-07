@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Forrajera Ruiz - Tienda integral para el campo, mascotas y agricultura. Calidad, confianza y servicio personalizado.">
+    <title>Forrajera Ruiz - Agroquímicos, Veterinaria y Alimentos</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="LOGO.jpeg" type="image/jpeg">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <!-- HEADER Y NAVEGACIÓN -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo-section">
+                <img src="LOGO.jpeg" alt="Forrajera Ruiz Logo" class="logo">
+                <div class="brand-info">
+                    <h1>Forrajera Ruiz</h1>
+                    <p class="tagline">Calidad para tu ganado</p>
+                </div>
+            </div>
+
+            <nav class="navbar">
+                <ul class="nav-menu">
+                    <li><a href="#inicio" class="nav-link">Inicio</a></li>
+                    <li><a href="#agroquimicos" class="nav-link">Agroquímicos</a></li>
+                    <li><a href="#veterinaria" class="nav-link">Veterinaria</a></li>
+                    <li><a href="#alimentos" class="nav-link">Alimentos</a></li>
+                    <li><a href="#accesorios" class="nav-link">Accesorios para mascotas</a></li>
+                    <li><a href="#contacto" class="nav-link">Contacto</a></li>
+                </ul>
+            </nav>
+
+            <!-- CARRITO -->
+            <div class="cart-container">
+                <button id="cartBtn" class="cart-btn">
+                    🛒 <span id="cartCount" class="cart-count">0</span>
+                </button>
+                <div id="cartDropdown" class="cart-dropdown hidden">
+                    <div class="cart-content">
+                        <h3>Mi Carrito</h3>
+                        <div id="cartItems" class="cart-items">
+                            <p class="empty-cart">Tu carrito está vacío</p>
+                        </div>
+                        <div class="cart-footer">
+                            <div class="cart-total">Total: $<span id="cartTotal">0.00</span></div>
+                            <button class="btn btn-primary" id="checkoutBtn">Finalizar Compra</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LOGIN CLIENTE / ADMIN -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-card">
+                <div id="authState" class="auth-state">
+                    <strong>Sesión:</strong> Invitado
+                </div>
+                <div id="googleSignInBtn" class="google-signin-btn"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BUSCADOR -->
+    <section class="search-section">
+        <div class="container">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar productos...">
+                <div id="searchResults" class="search-results hidden"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CATEGORÍAS PRINCIPALES -->
+    <section class="categories">
+        <div class="container">
+            <h2 class="section-title">Nuestro Catálogo</h2>
+            <div class="categories-grid">
+                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('agroquimicos')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('agroquimicos');}">
+                    <video muted loop playsinline class="category-bg-video">
+                        <source src="Agroquimicos.mp4" type="video/mp4">
+                    </video>
+                    <h3 class="video-title">Agroquímicos</h3>
+                    <div class="category-card-content">
+                        <p>Fertilizantes, herbicidas y control de plagas.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('agroquimicos')">Explorar</a>
+                    </div>
+                </div>
+                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('veterinaria')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('veterinaria');}">
+                    <video muted loop playsinline class="category-bg-video">
+                        <source src="Veterinaria.mp4" type="video/mp4">
+                    </video>
+                    <h3 class="video-title">Veterinaria</h3>
+                    <div class="category-card-content">
+                        <p>Medicamentos y vacunas para salud animal.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('veterinaria')">Explorar</a>
+                    </div>
+                </div>
+                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('alimentos')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('alimentos');}">
+                    <video muted loop playsinline class="category-bg-video">
+                        <source src="Alimentos.mp4" type="video/mp4">
+                    </video>
+                    <h3 class="video-title">Alimentos</h3>
+                    <div class="category-card-content">
+                        <p>Balanceados, granos y materias primas.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('alimentos')">Explorar</a>
+                    </div>
+                </div>
+                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('accesorios')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('accesorios');}">
+                    <video muted loop playsinline class="category-bg-video">
+                        <source src="Mascota.mp4" type="video/mp4">
+                    </video>
+                    <h3 class="video-title">Accesorios Mascotas</h3>
+                    <div class="category-card-content">
+                        <p>Correas, collares y pecheras resistentes.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('accesorios')">Explorar</a>
+                    </div>
+                </div>
+            </div>
+            <div class="catalog-cta-wrap">
+                <button type="button" class="btn btn-primary" onclick="openProductModal('all')">Ver todos nuestros productos</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- PANEL ADMIN (SOLO CUENTA AUTORIZADA) -->
+    <section id="adminPanel" class="section hidden">
+        <div class="container">
+            <h2 class="section-title">Panel de Administración</h2>
+            <p class="section-subtitle">Solo la cuenta autorizada puede crear, editar cantidad y eliminar productos.</p>
+
+            <form id="adminProductForm" class="admin-form">
+                <input type="text" id="adminName" placeholder="Nombre del producto" required>
+                <select id="adminCategory" required></select>
+                <input type="number" id="adminPrice" placeholder="Precio" min="0" step="0.01" required>
+                <input type="number" id="adminStock" placeholder="Cantidad disponible" min="0" step="1" required>
+                <input type="text" id="adminSpecs" placeholder="Especificaciones (talla, presentación, etc.)" required>
+                <input type="file" id="adminImage" accept="image/*">
+                <small class="admin-help-text">Foto opcional (JPG/PNG/WebP, máximo 1.5MB).</small>
+                <textarea id="adminDescription" rows="3" placeholder="Descripción del producto" required></textarea>
+                <button type="submit" class="btn btn-primary">Guardar Producto</button>
+            </form>
+
+            <div id="adminProductsList" class="admin-products-list"></div>
+        </div>
+    </section>
+
+    <!-- MODAL DE PRODUCTOS DETALLADOS -->
+    <div id="productModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeProductModal()">&times;</span>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN POR QUÉ ELEGIR FORRAJERA RUIZ -->
+    <section class="benefits">
+        <div class="container">
+            <h2 class="section-title">¿Por Qué Elegir Forrajera Ruiz?</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">✓</div>
+                    <h3>Productos de Calidad</h3>
+                    <p>Proveedores seleccionados y productos certificados para garantizar la mejor performance.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">✓</div>
+                    <h3>Asesoramiento Técnico</h3>
+                    <p>Nuestro equipo de expertos está disponible para asesorarte en la mejor solución.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">✓</div>
+                    <h3>Precios Competitivos</h3>
+                    <p>Ofertas especiales para compras al por mayor y clientes frecuentes.</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">✓</div>
+                    <h3>Entrega Rápida</h3>
+                    <p>Envío a domicilio o retiro en tienda. Estamos listos cuando lo necesitas.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN CONTACTO -->
+    <section id="contacto" class="contact">
+        <div class="container">
+            <h2 class="section-title">¿Necesitas Más Información?</h2>
+            <p class="section-subtitle">Contáctanos ahora para asesoramiento personalizado</p>
+            
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-method">
+                        <h3>📍 Ubicación</h3>
+                        <p>Calle 11 Sur #16, Segunda Centro, Tlacotepec de Benito Juarez<br>Puebla, México</p>
+                    </div>
+                    
+                    <div class="contact-method">
+                        <h3>📱 WhatsApp</h3>
+                        <p><a href="https://wa.me/2371056258" target="_blank" class="whatsapp-link">2371056258</a></p>
+                        <p class="small-text">Disponible de lunes a viernes 9AM - 7PM</p>
+                    </div>
+
+                    <div class="contact-method">
+                        <h3>📞 Teléfono</h3>
+                        <p><a href="tel:2371056258">2371056258</a></p>
+                    </div>
+
+                    <div class="contact-method">
+                        <h3>✉️ Email</h3>
+                        <p><a href="mailto:mary_solruiz@hotmail.com">mary_solruiz@hotmail.com</a></p>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <h3>Envíanos tu Consulta</h3>
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <input type="text" name="nombre" placeholder="Tu Nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" name="email" placeholder="Tu Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="tel" name="telefono" placeholder="Tu Teléfono">
+                        </div>
+                        <div class="form-group">
+                            <textarea name="mensaje" rows="5" placeholder="Tu Consulta..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Enviar Consulta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Forrajera Ruiz</h4>
+                    <p>Tu aliado integral en el campo y tus mascotas.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Forrajera Ruiz. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
