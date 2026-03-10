@@ -10,10 +10,10 @@ const CONFIG = {
     ],
     whatsappNumber: '2371056258',
     firebase: {
-        apiKey: '',
-        authDomain: '',
-        projectId: '',
-        appId: ''
+        apiKey: 'AIzaSyCUZo4oxRqX4i6bIebpY2JSjmHHf9-DHVo',
+        authDomain: 'fir-config-3c9e4.firebaseapp.com',
+        projectId: 'fir-config-3c9e4',
+        appId: '1:172473731932:web:f3994ecec7664e80384f99'
     }
 };
 
@@ -71,8 +71,11 @@ const state = {
     cloud: {
         enabled: false,
         db: null,
+        auth: null,
         firestore: null,
-        unsubscribeProducts: null
+        authApi: null,
+        unsubscribeProducts: null,
+        unsubscribeAuth: null
     }
 };
 
@@ -111,7 +114,7 @@ function initializeState() {
     migrateDataIfNeeded();
     state.products = readJSON(STORAGE_KEYS.products, []);
     state.cart = readJSON(STORAGE_KEYS.cart, []);
-    state.currentUser = readJSON(STORAGE_KEYS.user, null);
+    state.currentUser = isFirebaseConfigured() ? null : readJSON(STORAGE_KEYS.user, null);
 }
 
 function saveProducts() {
@@ -124,6 +127,31 @@ function saveCart() {
 
 function saveUser() {
     saveJSON(STORAGE_KEYS.user, state.currentUser);
+}
+
+function setCurrentUserFromFirebase(firebaseUser) {
+    if (!firebaseUser) return;
+
+    const providerUid = firebaseUser.providerData?.[0]?.uid || firebaseUser.uid || '';
+    state.currentUser = {
+        name: firebaseUser.displayName || 'Cliente',
+        sub: providerUid,
+        email: firebaseUser.email || '',
+        picture: firebaseUser.photoURL || ''
+    };
+
+    saveUser();
+    renderAuthState();
+    fillContactFieldsFromAccount();
+    updateAdminVisibility();
+}
+
+function clearCurrentUserSession() {
+    state.currentUser = null;
+    saveUser();
+    renderAuthState();
+    fillContactFieldsFromAccount();
+    updateAdminVisibility();
 }
 
 function isFirebaseConfigured() {
@@ -169,15 +197,27 @@ async function initializeCloudProductsSync() {
     if (!isFirebaseConfigured()) return false;
 
     try {
-        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js');
+        const { initializeApp, getApps, getApp } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js');
         const { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js');
+        const { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js');
 
-        const app = initializeApp(CONFIG.firebase);
+        const app = getApps().length ? getApp() : initializeApp(CONFIG.firebase);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         state.cloud.enabled = true;
         state.cloud.db = db;
+        state.cloud.auth = auth;
         state.cloud.firestore = { collection, doc, setDoc, deleteDoc, onSnapshot };
+        state.cloud.authApi = { GoogleAuthProvider, signInWithCredential, signOut };
+
+        state.cloud.unsubscribeAuth = onAuthStateChanged(auth, firebaseUser => {
+            if (firebaseUser) {
+                setCurrentUserFromFirebase(firebaseUser);
+            } else {
+                clearCurrentUserSession();
+            }
+        });
 
         const productsRef = collection(db, 'products');
         state.cloud.unsubscribeProducts = onSnapshot(productsRef, snapshot => {
@@ -194,6 +234,12 @@ async function initializeCloudProductsSync() {
         return true;
     } catch {
         state.cloud.enabled = false;
+        state.cloud.db = null;
+        state.cloud.auth = null;
+        state.cloud.firestore = null;
+        state.cloud.authApi = null;
+        state.cloud.unsubscribeProducts = null;
+        state.cloud.unsubscribeAuth = null;
         return false;
     }
 }
@@ -202,6 +248,10 @@ async function upsertProductRecord(product) {
     const normalizedProduct = normalizeProduct(product, product?.id);
 
     if (state.cloud.enabled && state.cloud.db && state.cloud.firestore) {
+        if (!state.cloud.auth?.currentUser) {
+            throw new Error('Debes iniciar sesión para guardar cambios en la nube');
+        }
+
         const { doc, setDoc } = state.cloud.firestore;
         await setDoc(doc(state.cloud.db, 'products', normalizedProduct.id), normalizedProduct);
         return normalizedProduct;
@@ -220,6 +270,10 @@ async function upsertProductRecord(product) {
 
 async function deleteProductRecord(productId) {
     if (state.cloud.enabled && state.cloud.db && state.cloud.firestore) {
+        if (!state.cloud.auth?.currentUser) {
+            throw new Error('Debes iniciar sesión para eliminar en la nube');
+        }
+
         const { doc, deleteDoc } = state.cloud.firestore;
         await deleteDoc(doc(state.cloud.db, 'products', productId));
         return;
@@ -642,7 +696,20 @@ function parseJwt(token) {
     }
 }
 
-function handleGoogleCredentialResponse(response) {
+async function handleGoogleCredentialResponse(response) {
+    if (state.cloud.enabled && state.cloud.auth && state.cloud.authApi) {
+        try {
+            const { GoogleAuthProvider, signInWithCredential } = state.cloud.authApi;
+            const credential = GoogleAuthProvider.credential(response.credential || '');
+            await signInWithCredential(state.cloud.auth, credential);
+            showNotification('Sesión iniciada correctamente', 'success');
+            return;
+        } catch {
+            showNotification('No se pudo iniciar sesión con Google/Firebase', 'error');
+            return;
+        }
+    }
+
     const payload = parseJwt(response.credential || '');
     if (!payload) {
         showNotification('No se pudo validar la cuenta de Google', 'error');
@@ -739,18 +806,23 @@ function initializeGoogleLogin(retryCount = 0) {
     }
 }
 
-function logout() {
+async function logout() {
     try {
         window.google?.accounts?.id?.disableAutoSelect?.();
     } catch {
         // ignore
     }
 
-    state.currentUser = null;
-    saveUser();
-    renderAuthState();
-    fillContactFieldsFromAccount();
-    updateAdminVisibility();
+    if (state.cloud.enabled && state.cloud.auth && state.cloud.authApi) {
+        try {
+            await state.cloud.authApi.signOut(state.cloud.auth);
+            return;
+        } catch {
+            showNotification('No se pudo cerrar sesión en Firebase', 'error');
+        }
+    }
+
+    clearCurrentUserSession();
 }
 
 function renderAuthState() {
@@ -1047,9 +1119,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCart();
     initializeForm();
     initializeAdminPanel();
+
+    initializeCloudProductsSync();
+
     renderAuthState();
     updateAdminVisibility();
     updateCartDisplay();
-
-    initializeCloudProductsSync();
 });
