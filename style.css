@@ -260,6 +260,12 @@ img, video{ max-width:100%; height:auto; }
 .auth-avatar{ width:36px; height:36px; border-radius:50%; border:1px solid var(--border); }
 .google-signin-btn{ min-height:40px; display:flex; align-items:center; justify-content:flex-end; margin-left:auto; text-align:right; }
 .google-signin-btn small{ display:block; color:var(--muted); }
+.google-login-btn{ display:inline-flex; align-items:center; gap:10px; height:42px; padding:0 16px 0 10px; border:1px solid rgba(18,33,23,0.12); border-radius:999px; background:#fff; color:#202124; font-weight:600; font-size:14px; line-height:1; cursor:pointer; box-shadow:0 2px 8px rgba(18,33,23,0.06); transition:transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
+.google-login-btn:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(18,33,23,0.1); border-color:rgba(18,33,23,0.2); }
+.google-login-btn:active{ transform:translateY(0); }
+.google-login-btn:focus-visible{ outline:none; box-shadow:0 0 0 4px rgba(66,133,244,0.2); }
+.google-login-icon{ width:24px; height:24px; border-radius:50%; background:#fff; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+.google-login-icon svg{ width:18px; height:18px; display:block; }
 
 .search-results{ background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); margin-top:8px; max-height:300px; overflow:auto; }
 .search-result-item{ padding:10px 12px; cursor:pointer; border-bottom:1px solid var(--border); }
@@ -310,6 +316,7 @@ img, video{ max-width:100%; height:auto; }
   .auth-user strong,
   .auth-user small{ line-height:1.25; }
   .google-signin-btn{ width:100%; margin-left:0; justify-content:center; text-align:center; }
+  .google-login-btn{ width:100%; max-width:260px; justify-content:center; }
   .categories-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .benefits-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .products-list{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
