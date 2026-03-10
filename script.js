@@ -199,7 +199,7 @@ async function initializeCloudProductsSync() {
     try {
         const { initializeApp, getApps, getApp } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js');
         const { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js');
-        const { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signOut } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js');
+        const { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js');
 
         const app = getApps().length ? getApp() : initializeApp(CONFIG.firebase);
         const db = getFirestore(app);
@@ -209,7 +209,8 @@ async function initializeCloudProductsSync() {
         state.cloud.db = db;
         state.cloud.auth = auth;
         state.cloud.firestore = { collection, doc, setDoc, deleteDoc, onSnapshot };
-        state.cloud.authApi = { GoogleAuthProvider, signInWithCredential, signOut };
+        state.cloud.authApi = { GoogleAuthProvider, signInWithCredential, signInWithPopup, signOut };
+        renderAuthState();
 
         state.cloud.unsubscribeAuth = onAuthStateChanged(auth, firebaseUser => {
             if (firebaseUser) {
@@ -704,8 +705,9 @@ async function handleGoogleCredentialResponse(response) {
             await signInWithCredential(state.cloud.auth, credential);
             showNotification('Sesión iniciada correctamente', 'success');
             return;
-        } catch {
-            showNotification('No se pudo iniciar sesión con Google/Firebase', 'error');
+        } catch (error) {
+            showNotification(getFirebaseAuthErrorMessage(error), 'error');
+            renderFirebaseGoogleButton();
             return;
         }
     }
@@ -747,6 +749,44 @@ function renderGoogleLoginFallback(message) {
     });
 }
 
+function getFirebaseAuthErrorMessage(error) {
+    const code = String(error?.code || '');
+
+    if (code.includes('auth/popup-closed-by-user')) return 'Cerraste la ventana de acceso antes de finalizar.';
+    if (code.includes('auth/popup-blocked')) return 'El navegador bloqueó la ventana emergente de Google.';
+    if (code.includes('auth/unauthorized-domain')) return 'Dominio no autorizado en Firebase Authentication.';
+    if (code.includes('auth/operation-not-allowed')) return 'Google Sign-In no está habilitado en Firebase Authentication.';
+    if (code.includes('auth/invalid-credential')) return 'Credencial de Google inválida para este proyecto Firebase.';
+
+    return 'No se pudo iniciar sesión con Google/Firebase.';
+}
+
+async function signInWithFirebasePopup() {
+    if (!state.cloud.enabled || !state.cloud.auth || !state.cloud.authApi) {
+        showNotification('Firebase Auth aún no está listo. Reintenta en unos segundos.', 'error');
+        return;
+    }
+
+    try {
+        const { GoogleAuthProvider, signInWithPopup } = state.cloud.authApi;
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithPopup(state.cloud.auth, provider);
+        showNotification('Sesión iniciada correctamente', 'success');
+    } catch (error) {
+        showNotification(getFirebaseAuthErrorMessage(error), 'error');
+    }
+}
+
+function renderFirebaseGoogleButton() {
+    const container = document.getElementById('googleSignInBtn');
+    if (!container) return;
+
+    container.classList.remove('hidden');
+    container.innerHTML = '<button type="button" class="btn-secondary" id="firebaseGoogleLoginBtn">Iniciar con Google</button>';
+    document.getElementById('firebaseGoogleLoginBtn')?.addEventListener('click', signInWithFirebasePopup);
+}
+
 function isGoogleClientIdValid(clientId) {
     return /^[0-9]+-[a-zA-Z0-9_.-]+\.apps\.googleusercontent\.com$/.test(String(clientId || '').trim());
 }
@@ -754,6 +794,11 @@ function isGoogleClientIdValid(clientId) {
 function initializeGoogleLogin(retryCount = 0) {
     const container = document.getElementById('googleSignInBtn');
     if (!container) return;
+
+    if (state.cloud.enabled && state.cloud.auth && state.cloud.authApi) {
+        renderFirebaseGoogleButton();
+        return;
+    }
 
     container.classList.remove('hidden');
 
