@@ -21,6 +21,9 @@
   --shadow: 0 8px 24px rgba(18,33,23,0.06);
   --btn-shadow: 0 6px 18px rgba(79,138,99,0.12);
   --t-fast: transform 220ms cubic-bezier(.2,.9,.3,1), opacity 220ms ease;
+  --space-section-lg: 30px;
+  --space-section-md: 24px;
+  --space-section-sm: 18px;
 }
 
 /* Respect users who prefer reduced motion */
@@ -68,8 +71,8 @@ img, video{ max-width:100%; height:auto; }
   .header .container{ grid-template-columns: 1fr auto; gap:10px; padding:12px; }
   .logo-section{ grid-column:1; grid-row:1; }
   .cart-container{ grid-column:2; grid-row:1; justify-self:end; }
-  .navbar{ grid-column:1 / -1; grid-row:2; width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .nav-menu{ width:max-content; min-width:100%; justify-content:flex-start; gap:10px; padding:8px 0; }
+  .navbar{ grid-column:1 / -1; grid-row:2; width:100%; overflow:visible; }
+  .nav-menu{ width:100%; min-width:0; justify-content:center; gap:10px; padding:8px 0; flex-wrap:wrap; row-gap:8px; }
   .brand-info p{ display:none; }
   .cart-dropdown{ right:12px; top:52px; min-width:260px; }
 }
@@ -99,15 +102,20 @@ img, video{ max-width:100%; height:auto; }
 .btn:focus{ outline:none; box-shadow: 0 0 0 4px rgba(106,167,122,0.08); }
 
 /* Section titles */
-.section{ padding:68px 0; }
-.section-title{ font-size:28px; margin-bottom:12px; font-weight:800; position:relative; text-align:center; z-index:2; }
+.auth-section,
+.search-section,
+.categories,
+.section,
+.benefits,
+.contact{ padding:var(--space-section-lg) 0; }
+.auth-section{ padding-bottom:0; }
+.search-section{ padding-top:0; }
+.section-title{ font-size:28px; margin:0 0 12px; font-weight:800; position:relative; text-align:center; z-index:2; }
 .section-title::after{ content:''; display:block; width:56px; height:6px; border-radius:6px; margin:16px auto 0; background:var(--accent-gradient); box-shadow:0 6px 18px rgba(79,138,99,0.08); position:relative; z-index:2; }
 .section-subtitle{ color:var(--muted); margin-bottom:24px; }
 
-.search-section{ padding:10px 0 18px; }
 .search-section .search-container{ max-width:460px; width:100%; }
 
-.benefits{ padding:68px 0; }
 .benefits-grid{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:16px; margin-top:30px; }
 .benefit-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:18px; }
 .benefit-icon{ width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; background:var(--accent-strong); font-weight:800; margin-bottom:10px; }
@@ -202,13 +210,16 @@ img, video{ max-width:100%; height:auto; }
 /* ------------------------- */
 /* Contact section styles   */
 /* ------------------------- */
-.contact{ padding:56px 0; }
 .contact-content{ display:flex; gap:36px; align-items:flex-start; }
 .contact-info{ flex:1; display:flex; flex-direction:column; gap:18px; }
 .contact-method{ background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,250,0.9)); border:1px solid var(--border); padding:14px 16px; border-radius:10px; box-shadow:0 8px 20px rgba(18,33,23,0.04); }
 .contact-method h3{ margin:0; font-size:16px; display:flex; align-items:center; gap:10px; }
 .contact-method p{ margin:6px 0 0; color:var(--muted); }
 .contact-method .small-text{ margin-top:8px; font-size:13px; color:var(--muted); }
+.contact-method a{ color:var(--accent-strong); text-decoration:none; font-weight:700; transition:color 180ms ease; }
+.contact-method a:visited{ color:var(--accent-strong); }
+.contact-method a:hover,
+.contact-method a:focus{ color:#3d6a4d; }
 
 .contact-form{ flex:1; background:linear-gradient(180deg, #ffffff, rgba(191,238,224,0.02)); border:1px solid var(--border); padding:20px; border-radius:12px; box-shadow:var(--shadow); }
 .contact-form h3{ margin-top:0; margin-bottom:12px; }
@@ -222,9 +233,11 @@ img, video{ max-width:100%; height:auto; }
 
 /* Small screens: make contact stack */
 @media (max-width:900px){
-  .contact-content{ flex-direction:column; gap:18px; }
+  .contact-content{ flex-direction:column; gap:18px; align-items:stretch; }
   .contact-form{ order:2; }
   .contact-info{ order:1; }
+  .contact-form,
+  .contact-info{ width:100%; }
 }
 
 .footer-section h4{ color:var(--text); font-weight:800; margin-bottom:10px; }
@@ -240,7 +253,6 @@ img, video{ max-width:100%; height:auto; }
 }
 
 /* Login + Admin + utilidades de catálogo dinámico */
-.auth-section{ padding:16px 0 8px; }
 .auth-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; box-shadow:var(--shadow); display:flex; justify-content:space-between; gap:14px; align-items:center; flex-wrap:wrap; }
 .auth-state{ color:var(--text); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .auth-user{ display:flex; align-items:center; gap:10px; min-width:0; }
@@ -284,12 +296,20 @@ img, video{ max-width:100%; height:auto; }
 
 @media (max-width:1024px){
   .container{ padding:0 16px; }
-  .section, .benefits, .contact{ padding:56px 0; }
+  .auth-section, .search-section, .categories, .section, .benefits, .contact{ padding:var(--space-section-md) 0; }
   .header .container{ grid-template-columns: 1fr auto; gap:12px; }
   .logo-section{ grid-column:1; grid-row:1; }
   .cart-container{ grid-column:2; grid-row:1; justify-self:end; }
-  .navbar{ grid-column:1 / -1; grid-row:2; width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .nav-menu{ width:max-content; min-width:100%; justify-content:flex-start; gap:8px; }
+  .navbar{ grid-column:1 / -1; grid-row:2; width:100%; overflow:visible; }
+  .nav-menu{ width:100%; min-width:0; justify-content:center; gap:8px; flex-wrap:wrap; row-gap:8px; }
+  .nav-link{ white-space:nowrap; }
+  .auth-card{ padding:12px 14px; }
+  .auth-state{ width:100%; justify-content:space-between; row-gap:8px; }
+  .auth-user{ flex:1 1 260px; min-width:0; }
+  .auth-user > div{ min-width:0; }
+  .auth-user strong,
+  .auth-user small{ line-height:1.25; }
+  .google-signin-btn{ width:100%; margin-left:0; justify-content:center; text-align:center; }
   .categories-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .benefits-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .products-list{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
@@ -304,7 +324,6 @@ img, video{ max-width:100%; height:auto; }
 }
 
 @media (max-width:768px){
-  .section, .benefits, .contact{ padding:50px 0; }
   .section-title{ font-size:24px; }
   .section-title::after{ margin-top:14px; }
   .modal{ padding:14px; }
@@ -328,7 +347,8 @@ img, video{ max-width:100%; height:auto; }
   .navbar{ overflow:visible; }
   .nav-menu{ width:100%; min-width:0; flex-wrap:wrap; justify-content:center; gap:8px; }
   .nav-link{ font-size:13px; padding:8px 10px; }
-  .search-section{ padding:10px 0 14px; }
+  .auth-section, .search-section, .categories, .section, .benefits, .contact{ padding:var(--space-section-sm) 0; }
+  .auth-state{ justify-content:center; text-align:center; }
   .search-section .search-container{ max-width:none; }
   .search-input,
   .admin-form input,
@@ -336,7 +356,6 @@ img, video{ max-width:100%; height:auto; }
   .admin-form textarea,
   .form-group input,
   .form-group textarea{ font-size:16px; }
-  .section, .benefits, .contact{ padding:42px 0; }
   .section-title{ font-size:22px; }
   .section-title::after{ margin-top:12px; }
   .categories-grid, .products-list, .benefits-grid{ grid-template-columns:1fr; }
