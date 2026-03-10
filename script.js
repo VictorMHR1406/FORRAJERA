@@ -70,6 +70,8 @@ const state = {
     activeCategory: '',
     cloud: {
         enabled: false,
+        initializing: false,
+        initError: null,
         db: null,
         auth: null,
         firestore: null,
@@ -196,10 +198,13 @@ function refreshOpenProductModalIfNeeded() {
 async function initializeCloudProductsSync() {
     if (!isFirebaseConfigured()) return false;
 
+    state.cloud.initializing = true;
+    state.cloud.initError = null;
+
     try {
         const { initializeApp, getApps, getApp } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js');
         const { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js');
-        const { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js');
+        const { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-auth.js');
 
         const app = getApps().length ? getApp() : initializeApp(CONFIG.firebase);
         const db = getFirestore(app);
@@ -209,7 +214,7 @@ async function initializeCloudProductsSync() {
         state.cloud.db = db;
         state.cloud.auth = auth;
         state.cloud.firestore = { collection, doc, setDoc, deleteDoc, onSnapshot };
-        state.cloud.authApi = { GoogleAuthProvider, signInWithCredential, signInWithPopup, signOut };
+        state.cloud.authApi = { GoogleAuthProvider, signInWithPopup, signOut };
         renderAuthState();
 
         state.cloud.unsubscribeAuth = onAuthStateChanged(auth, firebaseUser => {
@@ -233,8 +238,9 @@ async function initializeCloudProductsSync() {
         });
 
         return true;
-    } catch {
+    } catch (error) {
         state.cloud.enabled = false;
+        state.cloud.initError = error;
         state.cloud.db = null;
         state.cloud.auth = null;
         state.cloud.firestore = null;
@@ -242,6 +248,8 @@ async function initializeCloudProductsSync() {
         state.cloud.unsubscribeProducts = null;
         state.cloud.unsubscribeAuth = null;
         return false;
+    } finally {
+        state.cloud.initializing = false;
     }
 }
 
@@ -698,18 +706,10 @@ function parseJwt(token) {
 }
 
 async function handleGoogleCredentialResponse(response) {
-    if (state.cloud.enabled && state.cloud.auth && state.cloud.authApi) {
-        try {
-            const { GoogleAuthProvider, signInWithCredential } = state.cloud.authApi;
-            const credential = GoogleAuthProvider.credential(response.credential || '');
-            await signInWithCredential(state.cloud.auth, credential);
-            showNotification('Sesión iniciada correctamente', 'success');
-            return;
-        } catch (error) {
-            showNotification(getFirebaseAuthErrorMessage(error), 'error');
-            renderFirebaseGoogleButton();
-            return;
-        }
+    if (isFirebaseConfigured()) {
+        renderFirebaseGoogleButton();
+        showNotification('Usa el botón "Iniciar con Google" para acceder con Firebase.', 'error');
+        return;
     }
 
     const payload = parseJwt(response.credential || '');
@@ -761,6 +761,16 @@ function getFirebaseAuthErrorMessage(error) {
     return 'No se pudo iniciar sesión con Google/Firebase.';
 }
 
+function getFirebaseInitErrorMessage(error) {
+    const code = String(error?.code || '');
+
+    if (code.includes('auth/invalid-api-key')) return 'API Key inválida en la configuración de Firebase.';
+    if (code.includes('auth/app-not-authorized')) return 'Tu dominio no está autorizado en Firebase Authentication.';
+    if (code.includes('auth/operation-not-allowed')) return 'Google Sign-In no está habilitado en Firebase Authentication.';
+
+    return 'No se pudo inicializar Firebase Authentication. Revisa credenciales y dominios autorizados.';
+}
+
 async function signInWithFirebasePopup() {
     if (!state.cloud.enabled || !state.cloud.auth || !state.cloud.authApi) {
         showNotification('Firebase Auth aún no está listo. Reintenta en unos segundos.', 'error');
@@ -795,8 +805,33 @@ function initializeGoogleLogin(retryCount = 0) {
     const container = document.getElementById('googleSignInBtn');
     if (!container) return;
 
-    if (state.cloud.enabled && state.cloud.auth && state.cloud.authApi) {
-        renderFirebaseGoogleButton();
+    if (isFirebaseConfigured()) {
+        container.classList.remove('hidden');
+
+        if (state.cloud.enabled && state.cloud.auth && state.cloud.authApi) {
+            renderFirebaseGoogleButton();
+            return;
+        }
+
+        if (state.cloud.initializing) {
+            if (retryCount === 0) {
+                container.innerHTML = '<small>Conectando acceso con Firebase...</small>';
+            }
+
+            if (retryCount < 40) {
+                window.setTimeout(() => initializeGoogleLogin(retryCount + 1), 150);
+            } else {
+                renderGoogleLoginFallback('Firebase tardó en iniciar. Recarga la página e intenta otra vez.');
+            }
+            return;
+        }
+
+        if (state.cloud.initError) {
+            renderGoogleLoginFallback(getFirebaseInitErrorMessage(state.cloud.initError));
+            return;
+        }
+
+        renderGoogleLoginFallback('No se pudo iniciar Firebase Authentication. Verifica tu configuración.');
         return;
     }
 
@@ -1156,7 +1191,7 @@ window.addEventListener('click', event => {
     if (event.target === modal) closeProductModal();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initializeState();
     initializeCategoryVideo();
     initializeSmoothScroll();
@@ -1165,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
     initializeAdminPanel();
 
-    initializeCloudProductsSync();
+    await initializeCloudProductsSync();
 
     renderAuthState();
     updateAdminVisibility();
