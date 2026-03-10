@@ -793,7 +793,19 @@ function renderFirebaseGoogleButton() {
     if (!container) return;
 
     container.classList.remove('hidden');
-    container.innerHTML = '<button type="button" class="btn-secondary" id="firebaseGoogleLoginBtn">Iniciar con Google</button>';
+    container.innerHTML = `
+        <button type="button" class="google-login-btn" id="firebaseGoogleLoginBtn" aria-label="Iniciar sesión con Google">
+            <span class="google-login-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 48" focusable="false">
+                    <path fill="#EA4335" d="M24 9.5c3.1 0 5.9 1.1 8.1 3.2l6-6C34.4 3.2 29.6 1 24 1 14.6 1 6.5 6.5 2.6 14.5l7 5.5C11.4 13.9 17.1 9.5 24 9.5z"></path>
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-2.7-.4-3.9H24v7.4h12.8c-.3 1.8-1.8 4.6-5.2 6.4l6.8 5.3c4-3.7 6.2-9.1 6.2-15.2z"></path>
+                    <path fill="#FBBC05" d="M9.6 28c-.5-1.5-.8-3.1-.8-4.8s.3-3.3.8-4.8l-7-5.5C1 16.3 0 19.9 0 23.2s1 6.9 2.6 10.3l7-5.5z"></path>
+                    <path fill="#34A853" d="M24 47c6.5 0 11.9-2.1 15.9-5.8l-6.8-5.3c-1.8 1.3-4.3 2.3-9.1 2.3-6.9 0-12.6-4.4-14.6-10.5l-7 5.5C6.5 41.5 14.6 47 24 47z"></path>
+                </svg>
+            </span>
+            <span>Iniciar con Google</span>
+        </button>
+    `;
     document.getElementById('firebaseGoogleLoginBtn')?.addEventListener('click', signInWithFirebasePopup);
 }
 
