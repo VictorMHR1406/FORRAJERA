@@ -1,6 +1,12 @@
 const CONFIG = {
     googleClientId: '899292602874-gq7hododt0o3e02tv0lr9s6op3cdojh4.apps.googleusercontent.com',
     adminEmail: 'victorbanco132@gmail.com',
+    adminEmails: [
+        'victorbanco132@gmail.com',
+        'marysolruizmendez83@gmail.com',
+        'mary_solruiz@hotmail.com',
+        'serch.reyes24@gmail.com'
+    ],
     whatsappNumber: '2371056258'
 };
 
@@ -73,8 +79,18 @@ function saveJSON(key, value) {
 function migrateDataIfNeeded() {
     const current = localStorage.getItem(STORAGE_KEYS.version);
     if (current === APP_VERSION) return;
-    saveJSON(STORAGE_KEYS.products, []);
-    saveJSON(STORAGE_KEYS.cart, []);
+
+    const existingProducts = readJSON(STORAGE_KEYS.products, null);
+    const existingCart = readJSON(STORAGE_KEYS.cart, null);
+
+    if (!Array.isArray(existingProducts)) {
+        saveJSON(STORAGE_KEYS.products, []);
+    }
+
+    if (!Array.isArray(existingCart)) {
+        saveJSON(STORAGE_KEYS.cart, []);
+    }
+
     localStorage.setItem(STORAGE_KEYS.version, APP_VERSION);
 }
 
@@ -100,8 +116,23 @@ function saveUser() {
 function isAdmin() {
     const sub = (state.currentUser?.sub || '').trim();
     const email = state.currentUser?.email?.toLowerCase().trim();
-    const bySub = !!sub && sub === String(CONFIG.adminGoogleSub || '').trim();
-    const byEmail = !!email && email === String(CONFIG.adminEmail || '').toLowerCase().trim();
+
+    const adminSubs = [
+        ...(Array.isArray(CONFIG.adminGoogleSubs) ? CONFIG.adminGoogleSubs : []),
+        CONFIG.adminGoogleSub
+    ]
+        .map(value => String(value || '').trim())
+        .filter(Boolean);
+
+    const adminEmails = [
+        ...(Array.isArray(CONFIG.adminEmails) ? CONFIG.adminEmails : []),
+        CONFIG.adminEmail
+    ]
+        .map(value => String(value || '').toLowerCase().trim())
+        .filter(Boolean);
+
+    const bySub = !!sub && adminSubs.includes(sub);
+    const byEmail = !!email && adminEmails.includes(email);
     return bySub || byEmail;
 }
 
