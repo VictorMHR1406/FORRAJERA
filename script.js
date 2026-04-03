@@ -1234,10 +1234,14 @@ function renderAdminProducts() {
                     </div>
                     <p>$${product.price.toFixed(2)} · Stock: ${product.stock}</p>
                     <div class="admin-actions">
-                        <input type="number" min="0" step="0.01" value="${product.price.toFixed(2)}" onchange="adminUpdatePrice('${product.id}', this.value)" aria-label="Precio">
-                        <input type="number" min="0" value="${product.stock}" onchange="adminUpdateStock('${product.id}', this.value)" aria-label="Stock">
-                        <button class="btn-secondary" onclick="adminEditProduct('${product.id}')">Editar</button>
-                        <button class="btn-secondary" onclick="adminDeleteProduct('${product.id}')">Eliminar</button>
+                        <div class="admin-quick-fields">
+                            <input type="number" min="0" step="0.01" value="${product.price.toFixed(2)}" onchange="adminUpdatePrice('${product.id}', this.value)" aria-label="Precio" title="Precio">
+                            <input type="number" min="0" value="${product.stock}" onchange="adminUpdateStock('${product.id}', this.value)" aria-label="Stock" title="Stock">
+                        </div>
+                        <div class="admin-quick-buttons">
+                            <button class="btn-secondary" onclick="adminEditProduct('${product.id}')">Editar</button>
+                            <button class="btn-secondary" onclick="adminDeleteProduct('${product.id}')">Eliminar</button>
+                        </div>
                     </div>
                 </div>
             `).join('')}
