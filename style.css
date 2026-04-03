@@ -299,6 +299,9 @@ img, video{ max-width:100%; height:auto; }
 
 .admin-form{ background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:16px; display:grid; gap:10px; margin-bottom:18px; }
 .admin-form input, .admin-form select, .admin-form textarea{ width:100%; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:14px; }
+.admin-category-checkboxes{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
+.admin-category-option{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--text); cursor:pointer; }
+.admin-category-option input{ width:auto; margin:0; }
 .admin-form-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 .admin-help-text{ color:var(--muted); font-size:12px; margin-top:-4px; }
 .admin-products-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }

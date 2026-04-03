@@ -174,6 +174,13 @@ function isFirebaseConfigured() {
 function normalizeProduct(rawProduct, fallbackId = '') {
     const price = Number(rawProduct?.price);
     const stock = Math.max(0, parseInt(rawProduct?.stock ?? 0, 10) || 0);
+    const rawCategories = Array.isArray(rawProduct?.categories)
+        ? rawProduct.categories
+        : [rawProduct?.category].filter(Boolean);
+    const categories = rawCategories
+        .map(category => String(category || '').trim())
+        .filter(Boolean)
+        .filter((category, index, list) => list.indexOf(category) === index);
     const rawImages = Array.isArray(rawProduct?.images)
         ? rawProduct.images
         : (typeof rawProduct?.image === 'string' && rawProduct.image.trim() ? [rawProduct.image] : []);
@@ -185,7 +192,8 @@ function normalizeProduct(rawProduct, fallbackId = '') {
     return {
         id: String(rawProduct?.id || fallbackId || `prod-${Date.now()}`),
         name: String(rawProduct?.name || '').trim(),
-        category: String(rawProduct?.category || '').trim(),
+        category: categories[0] || String(rawProduct?.category || '').trim(),
+        categories,
         price: Number.isFinite(price) ? price : 0,
         stock,
         specs: String(rawProduct?.specs || '').trim(),
@@ -194,6 +202,21 @@ function normalizeProduct(rawProduct, fallbackId = '') {
         images,
         updatedAt: Number(rawProduct?.updatedAt) || Date.now()
     };
+}
+
+function getProductCategories(product) {
+    const categories = Array.isArray(product?.categories)
+        ? product.categories.map(category => String(category || '').trim()).filter(Boolean)
+        : [];
+
+    if (categories.length) return categories;
+
+    const singleCategory = String(product?.category || '').trim();
+    return singleCategory ? [singleCategory] : [];
+}
+
+function getProductCategoryLabels(product) {
+    return getProductCategories(product).map(getCategoryLabel);
 }
 
 function refreshOpenProductModalIfNeeded() {
@@ -341,10 +364,16 @@ function getProductsForCategory(categoryKey) {
     if (categoryKey === 'all') {
         return state.products;
     }
+
+    const matchesCategory = product => {
+        const categories = getProductCategories(product);
+        return categories.includes(categoryKey) || categories.some(category => CATEGORY_PARENT[category] === categoryKey);
+    };
+
     if (TOP_LEVEL_CATEGORIES.includes(categoryKey)) {
-        return state.products.filter(product => product.category === categoryKey || CATEGORY_PARENT[product.category] === categoryKey);
+        return state.products.filter(matchesCategory);
     }
-    return state.products.filter(product => product.category === categoryKey);
+    return state.products.filter(matchesCategory);
 }
 
 function findProductById(productId) {
@@ -616,7 +645,7 @@ function initializeSearch() {
         }
 
         const filtered = state.products.filter(product => {
-            return [product.name, product.description, product.specs, getCategoryLabel(product.category)]
+            return [product.name, product.description, product.specs, getProductCategoryLabels(product).join(' / ')]
                 .join(' ')
                 .toLowerCase()
                 .includes(query);
@@ -631,7 +660,7 @@ function initializeSearch() {
         searchResults.innerHTML = filtered.map(product => `
             <div class="search-result-item" onclick="openProductDetailFromSearch('${product.id}')">
                 <strong>${sanitizeText(product.name)}</strong><br>
-                <small>${sanitizeText(getCategoryLabel(product.category))}</small>
+                <small>${sanitizeText(getProductCategoryLabels(product).join(' / '))}</small>
             </div>
         `).join('');
 
@@ -837,7 +866,7 @@ function openProductDetail(productId) {
     const modalBody = document.getElementById('modalBody');
     if (!modal || !modalBody) return;
 
-    const categoryToReturn = state.activeCategory || product.category;
+    const categoryToReturn = state.activeCategory || getProductCategories(product)[0] || product.category;
 
     const html = `
         <div class="product-detail-wrap">
@@ -845,7 +874,7 @@ function openProductDetail(productId) {
                 ${renderProductDetailGalleryHTML(product)}
                 <h2>${sanitizeText(product.name)}</h2>
                 <p class="product-detail-description">${sanitizeText(product.description)}</p>
-                <div class="product-specs product-detail-spec">📂 ${sanitizeText(getCategoryLabel(product.category))}</div>
+                <div class="product-specs product-detail-spec">📂 ${sanitizeText(getProductCategoryLabels(product).join(' / '))}</div>
                 <div class="product-specs product-detail-spec">📦 ${sanitizeText(product.specs)}</div>
                 <div class="product-specs product-detail-spec">Disponibles: ${product.stock ?? 0}</div>
                 <div class="product-price product-detail-price">$${product.price.toFixed(2)}</div>
@@ -872,7 +901,7 @@ function openProductDetail(productId) {
 function openProductDetailFromSearch(productId) {
     const product = findProductById(productId);
     if (!product) return;
-    state.activeCategory = product.category;
+    state.activeCategory = getProductCategories(product)[0] || product.category;
     openProductDetail(productId);
     const results = document.getElementById('searchResults');
     results?.classList.add('hidden');
@@ -1202,14 +1231,32 @@ function initializeForm() {
 }
 
 function populateAdminCategories() {
-    const select = document.getElementById('adminCategory');
-    if (!select) return;
+    const container = document.getElementById('adminCategory');
+    if (!container) return;
 
     const options = TOP_LEVEL_CATEGORIES
-        .map(key => `<option value="${key}">${getCategoryLabel(key)}</option>`)
+        .map(key => `
+            <label class="admin-category-option">
+                <input type="checkbox" name="adminCategoryOption" value="${key}">
+                <span>${getCategoryLabel(key)}</span>
+            </label>
+        `)
         .join('');
 
-    select.innerHTML = `<option value="" disabled selected>Selecciona una categoría</option>${options}`;
+    container.innerHTML = options;
+}
+
+function getSelectedAdminCategories() {
+    return Array.from(document.querySelectorAll('input[name="adminCategoryOption"]:checked'))
+        .map(input => input.value)
+        .filter(Boolean);
+}
+
+function setSelectedAdminCategories(categories) {
+    const selectedCategories = new Set((Array.isArray(categories) ? categories : []).map(value => String(value || '').trim()));
+    document.querySelectorAll('input[name="adminCategoryOption"]').forEach(input => {
+        input.checked = selectedCategories.has(input.value);
+    });
 }
 
 function renderAdminProducts() {
@@ -1229,7 +1276,7 @@ function renderAdminProducts() {
                         ${renderProductImageHTML(product, 'admin-product-thumb-wrap', 'admin-product-thumb', 'admin-product-thumb-placeholder')}
                         <div>
                             <h4>${sanitizeText(product.name)}</h4>
-                            <p>${sanitizeText(getCategoryLabel(product.category))}</p>
+                            <p>${sanitizeText(getProductCategoryLabels(product).join(' / '))}</p>
                         </div>
                     </div>
                     <p>$${product.price.toFixed(2)} · Stock: ${product.stock}</p>
@@ -1314,14 +1361,13 @@ function adminEditProduct(productId) {
 
     state.adminEditingProductId = product.id;
     const nameInput = document.getElementById('adminName');
-    const categoryInput = document.getElementById('adminCategory');
     const priceInput = document.getElementById('adminPrice');
     const stockInput = document.getElementById('adminStock');
     const specsInput = document.getElementById('adminSpecs');
     const descriptionInput = document.getElementById('adminDescription');
 
     if (nameInput) nameInput.value = product.name || '';
-    if (categoryInput) categoryInput.value = product.category || '';
+    setSelectedAdminCategories(getProductCategories(product));
     if (priceInput) priceInput.value = String(product.price ?? '');
     if (stockInput) stockInput.value = String(product.stock ?? 0);
     if (specsInput) specsInput.value = product.specs || '';
@@ -1410,7 +1456,7 @@ function initializeAdminPanel() {
         if (!isAdmin()) return;
 
         const name = document.getElementById('adminName')?.value.trim() || '';
-        const category = document.getElementById('adminCategory')?.value || '';
+        const categories = getSelectedAdminCategories();
         const price = parseFloat(document.getElementById('adminPrice')?.value || '0');
         const stock = Math.max(0, parseInt(document.getElementById('adminStock')?.value || '0', 10));
         const specs = document.getElementById('adminSpecs')?.value.trim() || '';
@@ -1418,7 +1464,7 @@ function initializeAdminPanel() {
         const imageInput = document.getElementById('adminImage');
         const imageFiles = imageInput instanceof HTMLInputElement ? Array.from(imageInput.files || []) : [];
 
-        if (!name || !category || !specs || !description || Number.isNaN(price)) {
+        if (!name || !categories.length || !specs || !description || Number.isNaN(price)) {
             showNotification('Completa todos los campos del producto', 'error');
             return;
         }
@@ -1443,7 +1489,8 @@ function initializeAdminPanel() {
         const newProduct = normalizeProduct({
             id: shouldUpdate ? currentEditingProduct.id : `prod-${Date.now()}`,
             name,
-            category,
+            category: categories[0],
+            categories,
             price,
             stock,
             specs,
