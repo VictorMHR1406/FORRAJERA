@@ -61,7 +61,6 @@ const CATEGORY_PARENT = {
 };
 
 const TOP_LEVEL_CATEGORIES = ['agroquimicos', 'veterinaria', 'alimentos', 'accesorios'];
-const MAX_PRODUCT_IMAGE_SIZE = 1.5 * 1024 * 1024;
 
 const state = {
     products: [],
@@ -1190,12 +1189,6 @@ function initializeAdminPanel() {
 
         if (!name || !category || !specs || !description || Number.isNaN(price)) {
             showNotification('Completa todos los campos del producto', 'error');
-            return;
-        }
-
-        const oversizedImage = imageFiles.find(file => file.size > MAX_PRODUCT_IMAGE_SIZE);
-        if (oversizedImage) {
-            showNotification('Una imagen excede 1.5MB. Usa fotos mas ligeras.', 'error');
             return;
         }
 
