@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdminEmail() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'victorbanco132@gmail.com',
+          'marysolruiz83@gmail.com',
+          'marysolruizmendez83@gmail.com',
+          'mary_solruiz@hotmail.com',
+          'serch.reyes24@gmail.com'
+        ];
+    }
+
+    match /products/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdminEmail();
+    }
+  }
+}

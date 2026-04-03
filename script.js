@@ -165,6 +165,13 @@ function isFirebaseConfigured() {
 function normalizeProduct(rawProduct, fallbackId = '') {
     const price = Number(rawProduct?.price);
     const stock = Math.max(0, parseInt(rawProduct?.stock ?? 0, 10) || 0);
+    const rawImages = Array.isArray(rawProduct?.images)
+        ? rawProduct.images
+        : (typeof rawProduct?.image === 'string' && rawProduct.image.trim() ? [rawProduct.image] : []);
+
+    const images = rawImages
+        .map(imageUrl => String(imageUrl || '').trim())
+        .filter(Boolean);
 
     return {
         id: String(rawProduct?.id || fallbackId || `prod-${Date.now()}`),
@@ -174,7 +181,8 @@ function normalizeProduct(rawProduct, fallbackId = '') {
         stock,
         specs: String(rawProduct?.specs || '').trim(),
         description: String(rawProduct?.description || '').trim(),
-        image: typeof rawProduct?.image === 'string' ? rawProduct.image : '',
+        image: images[0] || '',
+        images,
         updatedAt: Number(rawProduct?.updatedAt) || Date.now()
     };
 }
@@ -353,7 +361,23 @@ function fileToDataURL(file) {
 }
 
 function getProductImage(product) {
+    const images = Array.isArray(product?.images)
+        ? product.images.map(imageUrl => String(imageUrl || '').trim()).filter(Boolean)
+        : [];
+
+    if (images.length) return images[0];
     return typeof product?.image === 'string' ? product.image.trim() : '';
+}
+
+function getProductImages(product) {
+    const images = Array.isArray(product?.images)
+        ? product.images.map(imageUrl => String(imageUrl || '').trim()).filter(Boolean)
+        : [];
+
+    if (images.length) return images;
+
+    const singleImage = typeof product?.image === 'string' ? product.image.trim() : '';
+    return singleImage ? [singleImage] : [];
 }
 
 function renderProductImageHTML(product, wrapperClass, imageClass, placeholderClass = 'product-image-placeholder') {
@@ -371,6 +395,62 @@ function renderProductImageHTML(product, wrapperClass, imageClass, placeholderCl
             <div class="${placeholderClass}">Sin foto</div>
         </div>
     `;
+}
+
+function renderProductDetailGalleryHTML(product) {
+    const images = getProductImages(product);
+    if (!images.length) {
+        return renderProductImageHTML(product, 'product-detail-media', 'product-detail-image', 'product-detail-placeholder');
+    }
+
+    const thumbnails = images.length > 1
+        ? `
+            <div class="gallery-thumbs">
+                ${images.map((imageUrl, index) => `
+                    <button
+                        type="button"
+                        class="gallery-thumb ${index === 0 ? 'active' : ''}"
+                        data-gallery-thumb="true"
+                        data-image-url="${sanitizeText(imageUrl)}"
+                        aria-label="Ver foto ${index + 1} de ${sanitizeText(product.name)}"
+                    >
+                        <img src="${sanitizeText(imageUrl)}" alt="Miniatura ${index + 1} de ${sanitizeText(product.name)}">
+                    </button>
+                `).join('')}
+            </div>
+        `
+        : '';
+
+    return `
+        <div class="product-detail-gallery">
+            <div class="product-detail-media">
+                <img
+                    src="${sanitizeText(images[0])}"
+                    alt="Foto de ${sanitizeText(product.name)}"
+                    class="product-detail-image"
+                    data-detail-main-image="true"
+                >
+            </div>
+            ${thumbnails}
+        </div>
+    `;
+}
+
+function initializeProductDetailGallery(scope) {
+    const mainImage = scope.querySelector('[data-detail-main-image="true"]');
+    const thumbs = Array.from(scope.querySelectorAll('[data-gallery-thumb="true"]'));
+    if (!mainImage || !thumbs.length) return;
+
+    thumbs.forEach(thumb => {
+        thumb.addEventListener('click', () => {
+            const nextImage = thumb.getAttribute('data-image-url') || '';
+            if (!nextImage) return;
+
+            mainImage.src = nextImage;
+            thumbs.forEach(currentThumb => currentThumb.classList.remove('active'));
+            thumb.classList.add('active');
+        });
+    });
 }
 
 function initializeCategoryVideo() {
@@ -647,7 +727,7 @@ function openProductDetail(productId) {
     const html = `
         <div class="product-detail-wrap">
             <div class="product-detail-content">
-                ${renderProductImageHTML(product, 'product-detail-media', 'product-detail-image', 'product-detail-placeholder')}
+                ${renderProductDetailGalleryHTML(product)}
                 <h2>${sanitizeText(product.name)}</h2>
                 <p class="product-detail-description">${sanitizeText(product.description)}</p>
                 <div class="product-specs product-detail-spec">📂 ${sanitizeText(getCategoryLabel(product.category))}</div>
@@ -669,6 +749,7 @@ function openProductDetail(productId) {
     `;
 
     modalBody.innerHTML = html;
+    initializeProductDetailGallery(modalBody);
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -1105,24 +1186,25 @@ function initializeAdminPanel() {
         const specs = document.getElementById('adminSpecs')?.value.trim() || '';
         const description = document.getElementById('adminDescription')?.value.trim() || '';
         const imageInput = document.getElementById('adminImage');
-        const imageFile = imageInput instanceof HTMLInputElement ? imageInput.files?.[0] : null;
+        const imageFiles = imageInput instanceof HTMLInputElement ? Array.from(imageInput.files || []) : [];
 
         if (!name || !category || !specs || !description || Number.isNaN(price)) {
             showNotification('Completa todos los campos del producto', 'error');
             return;
         }
 
-        if (imageFile && imageFile.size > MAX_PRODUCT_IMAGE_SIZE) {
-            showNotification('La imagen excede 1.5MB. Usa una foto más ligera.', 'error');
+        const oversizedImage = imageFiles.find(file => file.size > MAX_PRODUCT_IMAGE_SIZE);
+        if (oversizedImage) {
+            showNotification('Una imagen excede 1.5MB. Usa fotos mas ligeras.', 'error');
             return;
         }
 
-        let image = '';
-        if (imageFile) {
+        let images = [];
+        if (imageFiles.length) {
             try {
-                image = await fileToDataURL(imageFile);
+                images = await Promise.all(imageFiles.map(fileToDataURL));
             } catch {
-                showNotification('No se pudo leer la imagen seleccionada', 'error');
+                showNotification('No se pudo leer una de las imagenes seleccionadas', 'error');
                 return;
             }
         }
@@ -1135,7 +1217,8 @@ function initializeAdminPanel() {
             stock,
             specs,
             description,
-            image,
+            image: images[0] || '',
+            images,
             updatedAt: Date.now()
         });
 
