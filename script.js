@@ -1161,63 +1161,6 @@ function initializeForm() {
     });
 }
 
-function reprocessImageWithWhiteBackground(dataUrl) {
-    return new Promise(resolve => {
-        if (!dataUrl || !dataUrl.startsWith('data:')) { resolve(dataUrl); return; }
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth || img.width || 800;
-            canvas.height = img.naturalHeight || img.height || 800;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) { resolve(dataUrl); return; }
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg', 0.88));
-        };
-        img.onerror = () => resolve(dataUrl);
-        img.src = dataUrl;
-    });
-}
-
-async function fixAllProductImageBackgrounds() {
-    if (!isAdmin()) return;
-
-    const btn = document.getElementById('fixImagesBtn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Reparando...'; }
-
-    const productsToFix = state.products.filter(p => (p.images && p.images.length) || p.image);
-    if (!productsToFix.length) {
-        showNotification('No hay imágenes para reparar', 'success');
-        if (btn) { btn.disabled = false; btn.textContent = 'Reparar fondos negros'; }
-        return;
-    }
-
-    let fixed = 0;
-    for (const product of productsToFix) {
-        const origImages = (product.images && product.images.length) ? product.images : (product.image ? [product.image] : []);
-        if (!origImages.length) continue;
-
-        const newImages = await Promise.all(origImages.map(reprocessImageWithWhiteBackground));
-
-        try {
-            await upsertProductRecord({
-                ...product,
-                image: newImages[0] || '',
-                images: newImages,
-                updatedAt: Date.now()
-            });
-            fixed++;
-        } catch {
-            // skip products that fail
-        }
-    }
-
-    showNotification(`${fixed} producto(s) reparados correctamente`, 'success');
-    if (btn) { btn.disabled = false; btn.textContent = 'Reparar fondos negros'; }
-}
-
 function populateAdminCategories() {
     const select = document.getElementById('adminCategory');
     if (!select) return;
@@ -1238,9 +1181,7 @@ function renderAdminProducts() {
         return;
     }
 
-    const hasImages = state.products.some(p => (p.images && p.images.length) || p.image);
     container.innerHTML = `
-        ${hasImages ? `<div class="admin-fix-bar"><button id="fixImagesBtn" type="button" class="btn btn-secondary" onclick="fixAllProductImageBackgrounds()">🔧 Reparar fondos negros</button><small>Convierte las fotos guardadas a fondo blanco de una sola vez.</small></div>` : ''}
         <div class="admin-products-grid">
             ${state.products.map(product => `
                 <div class="admin-product-item">
@@ -1431,7 +1372,6 @@ window.removeFromCart = removeFromCart;
 window.updateQuantity = updateQuantity;
 window.adminDeleteProduct = adminDeleteProduct;
 window.adminUpdateStock = adminUpdateStock;
-window.fixAllProductImageBackgrounds = fixAllProductImageBackgrounds;
 
 window.addEventListener('click', event => {
     const modal = document.getElementById('productModal');
