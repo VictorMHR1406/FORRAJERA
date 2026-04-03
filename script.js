@@ -61,6 +61,14 @@ const CATEGORY_PARENT = {
 };
 
 const TOP_LEVEL_CATEGORIES = ['agroquimicos', 'veterinaria', 'alimentos', 'accesorios'];
+const IMAGE_OPTIMIZATION = {
+    maxWidth: 1280,
+    maxHeight: 1280,
+    initialQuality: 0.82,
+    minQuality: 0.5,
+    qualityStep: 0.08,
+    targetProductBytesCloud: 900 * 1024
+};
 
 const state = {
     products: [],
@@ -357,6 +365,85 @@ function fileToDataURL(file) {
         reader.onerror = () => reject(new Error('No fue posible leer la imagen'));
         reader.readAsDataURL(file);
     });
+}
+
+function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+
+        image.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(image);
+        };
+
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('No fue posible cargar la imagen'));
+        };
+
+        image.src = url;
+    });
+}
+
+function drawImageToDataURL(image, mimeType, quality, width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('No fue posible procesar la imagen');
+
+    ctx.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL(mimeType, quality);
+}
+
+async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
+    const isImage = String(file?.type || '').startsWith('image/');
+    if (!isImage) return fileToDataURL(file);
+
+    const image = await loadImageFromFile(file);
+    const originalWidth = image.naturalWidth || image.width || options.maxWidth;
+    const originalHeight = image.naturalHeight || image.height || options.maxHeight;
+    const scale = Math.min(1, options.maxWidth / originalWidth, options.maxHeight / originalHeight);
+    const width = Math.max(1, Math.round(originalWidth * scale));
+    const height = Math.max(1, Math.round(originalHeight * scale));
+
+    let quality = options.initialQuality;
+    let dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, width, height);
+
+    while (quality > options.minQuality && dataUrl.length > file.size * 1.35) {
+        quality = Math.max(options.minQuality, quality - options.qualityStep);
+        dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, width, height);
+    }
+
+    return dataUrl;
+}
+
+function estimateObjectBytes(value) {
+    return new TextEncoder().encode(JSON.stringify(value)).length;
+}
+
+function getProductSaveErrorMessage(error) {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '');
+
+    if (code.includes('permission-denied')) {
+        return 'Firebase rechazo el guardado por permisos. Revisa Firestore Rules y cuenta admin.';
+    }
+
+    if (code.includes('resource-exhausted') || code.includes('invalid-argument') || /maximum document size|Document too large/i.test(message)) {
+        return 'Firebase no pudo guardar porque el producto con fotos pesa demasiado. Prueba con menos fotos o resolucion menor.';
+    }
+
+    if (code.includes('unavailable') || code.includes('deadline-exceeded')) {
+        return 'Firebase no responde en este momento. Intenta nuevamente en unos segundos.';
+    }
+
+    if (code.includes('unauthenticated')) {
+        return 'Debes iniciar sesion otra vez para guardar en la nube.';
+    }
+
+    return 'No se pudo guardar en Firebase. Revisa conexion y configuracion de Firestore.';
 }
 
 function getProductImage(product) {
@@ -1195,7 +1282,7 @@ function initializeAdminPanel() {
         let images = [];
         if (imageFiles.length) {
             try {
-                images = await Promise.all(imageFiles.map(fileToDataURL));
+                images = await Promise.all(imageFiles.map(file => fileToOptimizedDataURL(file)));
             } catch {
                 showNotification('No se pudo leer una de las imagenes seleccionadas', 'error');
                 return;
@@ -1215,10 +1302,18 @@ function initializeAdminPanel() {
             updatedAt: Date.now()
         });
 
+        if (state.cloud.enabled) {
+            const payloadBytes = estimateObjectBytes(newProduct);
+            if (payloadBytes > IMAGE_OPTIMIZATION.targetProductBytesCloud) {
+                showNotification('Demasiadas fotos para Firestore en un solo producto. Sube menos imagenes.', 'error');
+                return;
+            }
+        }
+
         try {
             await upsertProductRecord(newProduct);
-        } catch {
-            showNotification('No se pudo guardar. Revisa tu conexión e intenta otra vez.', 'error');
+        } catch (error) {
+            showNotification(getProductSaveErrorMessage(error), 'error');
             return;
         }
 
