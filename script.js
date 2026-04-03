@@ -393,6 +393,10 @@ function drawImageToDataURL(image, mimeType, quality, width, height) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('No fue posible procesar la imagen');
 
+    // Fondo blanco para evitar que areas transparentes (PNG sin fondo de Canva)
+    // se vuelvan negras al convertir a JPEG.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
     ctx.drawImage(image, 0, 0, width, height);
     return canvas.toDataURL(mimeType, quality);
 }
