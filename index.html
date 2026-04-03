@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Forrajera Ruiz - Tienda integral para el campo, mascotas y agricultura. Calidad, confianza y servicio personalizado.">
     <title>Forrajera Ruiz - Agroquímicos, Veterinaria y Alimentos</title>
-    <link rel="stylesheet" href="style.css?v=20260403-5">
+    <link rel="stylesheet" href="style.css?v=20260403-13">
     <link rel="icon" href="LOGO.jpeg" type="image/jpeg">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -27,6 +27,7 @@
                     <li><a href="#agroquimicos" class="nav-link">Agroquímicos</a></li>
                     <li><a href="#veterinaria" class="nav-link">Veterinaria</a></li>
                     <li><a href="#alimentos" class="nav-link">Alimentos</a></li>
+                    <li><a href="#forrajes" class="nav-link">Forrajes</a></li>
                     <li><a href="#accesorios" class="nav-link">Accesorios para mascotas</a></li>
                     <li><a href="#contacto" class="nav-link">Contacto</a></li>
                 </ul>
@@ -80,44 +81,44 @@
         <div class="container">
             <h2 class="section-title">Nuestro Catálogo</h2>
             <div class="categories-grid">
-                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('agroquimicos')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('agroquimicos');}">
-                    <video muted loop playsinline class="category-bg-video">
-                        <source src="Agroquimicos.mp4" type="video/mp4">
-                    </video>
+                <div class="category-card category-card-video category-agroquimicos" role="button" tabindex="0" onclick="handleCategoryCardClick('agroquimicos', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('agroquimicos', this);}">
+                    <img src="agroquimicos.jpg" alt="Portada Agroquímicos" class="category-cover">
                     <h3 class="video-title">Agroquímicos</h3>
                     <div class="category-card-content">
                         <p>Fertilizantes, herbicidas y control de plagas.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('agroquimicos')">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('agroquimicos', this.closest('.category-card'))">Explorar</a>
                     </div>
                 </div>
-                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('veterinaria')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('veterinaria');}">
-                    <video muted loop playsinline class="category-bg-video">
-                        <source src="Veterinaria.mp4" type="video/mp4">
-                    </video>
+                <div class="category-card category-card-video category-veterinaria" role="button" tabindex="0" onclick="handleCategoryCardClick('veterinaria', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('veterinaria', this);}">
+                    <img src="veterinaria.jpeg" alt="Portada Veterinaria" class="category-cover">
                     <h3 class="video-title">Veterinaria</h3>
                     <div class="category-card-content">
                         <p>Medicamentos y vacunas para salud animal.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('veterinaria')">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('veterinaria', this.closest('.category-card'))">Explorar</a>
                     </div>
                 </div>
-                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('alimentos')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('alimentos');}">
-                    <video muted loop playsinline class="category-bg-video">
-                        <source src="Alimentos.mp4" type="video/mp4">
-                    </video>
+                <div class="category-card category-card-video category-alimentos" role="button" tabindex="0" onclick="handleCategoryCardClick('alimentos', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('alimentos', this);}">
+                    <img src="alimentos.jpeg" alt="Portada Alimentos" class="category-cover">
                     <h3 class="video-title">Alimentos</h3>
                     <div class="category-card-content">
                         <p>Balanceados, granos y materias primas.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('alimentos')">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('alimentos', this.closest('.category-card'))">Explorar</a>
                     </div>
                 </div>
-                <div class="category-card category-card-video" role="button" tabindex="0" onclick="openProductModal('accesorios')" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); openProductModal('accesorios');}">
-                    <video muted loop playsinline class="category-bg-video">
-                        <source src="Mascota.mp4" type="video/mp4">
-                    </video>
+                <div class="category-card category-card-video category-forrajes" role="button" tabindex="0" onclick="handleCategoryCardClick('forrajes', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('forrajes', this);}">
+                    <img src="forrajes.jpg" alt="Portada Forrajes" class="category-cover">
+                    <h3 class="video-title">Forrajes</h3>
+                    <div class="category-card-content">
+                        <p>Pacas, alfalfa y forrajes para ganado.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('forrajes', this.closest('.category-card'))">Explorar</a>
+                    </div>
+                </div>
+                <div class="category-card category-card-video category-accesorios" role="button" tabindex="0" onclick="handleCategoryCardClick('accesorios', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('accesorios', this);}">
+                    <img src="portadamascotas.jpeg" alt="Portada Accesorios Mascotas" class="category-cover">
                     <h3 class="video-title">Accesorios Mascotas</h3>
                     <div class="category-card-content">
                         <p>Correas, collares y pecheras resistentes.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); openProductModal('accesorios')">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('accesorios', this.closest('.category-card'))">Explorar</a>
                     </div>
                 </div>
             </div>
@@ -142,7 +143,10 @@
                 <input type="file" id="adminImage" accept="image/*" multiple>
                 <small class="admin-help-text">Fotos opcionales (JPG/PNG/WebP). Se optimizan automaticamente para guardar en la nube.</small>
                 <textarea id="adminDescription" rows="3" placeholder="Descripción del producto" required></textarea>
-                <button type="submit" class="btn btn-primary">Guardar Producto</button>
+                <div class="admin-form-actions">
+                    <button type="submit" class="btn btn-primary" id="adminSubmitBtn">Guardar Producto</button>
+                    <button type="button" class="btn-secondary hidden" id="adminCancelEditBtn">Cancelar edición</button>
+                </div>
             </form>
 
             <div id="adminProductsList" class="admin-products-list"></div>
@@ -255,6 +259,6 @@
         </div>
     </footer>
 
-    <script src="script.js?v=20260403-6"></script>
+    <script src="script.js?v=20260403-12"></script>
 </body>
 </html>

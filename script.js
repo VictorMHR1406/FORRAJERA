@@ -36,6 +36,7 @@ const CATEGORY_LABELS = {
     vacunas: 'Vacunas',
     salud: 'Salud Animal',
     alimentos: 'Alimentos',
+    forrajes: 'Forrajes',
     maiz: 'Maíz',
     sorgo: 'Sorgo y Trigo',
     balanceado: 'Alimentos Balanceados',
@@ -60,7 +61,7 @@ const CATEGORY_PARENT = {
     'accesorios-varios': 'accesorios'
 };
 
-const TOP_LEVEL_CATEGORIES = ['agroquimicos', 'veterinaria', 'alimentos', 'accesorios'];
+const TOP_LEVEL_CATEGORIES = ['agroquimicos', 'veterinaria', 'alimentos', 'forrajes', 'accesorios'];
 const IMAGE_OPTIMIZATION = {
     maxWidth: 1280,
     maxHeight: 1280,
@@ -75,6 +76,7 @@ const state = {
     cart: [],
     currentUser: null,
     activeCategory: '',
+    adminEditingProductId: '',
     cloud: {
         enabled: false,
         initializing: false,
@@ -543,22 +545,19 @@ function initializeProductDetailGallery(scope) {
     });
 }
 
-function initializeCategoryVideo() {
-    const videoCards = document.querySelectorAll('.category-card-video');
-    if (!videoCards.length) return;
+function handleCategoryCardClick(categoryKey, cardElement) {
+    const card = cardElement instanceof HTMLElement ? cardElement : null;
 
-    videoCards.forEach(videoCard => {
-        const video = videoCard.querySelector('.category-bg-video');
-        if (!video) return;
+    if (card) {
+        card.classList.add('category-card-clicked');
+        window.setTimeout(() => {
+            card.classList.remove('category-card-clicked');
+        }, 160);
+    }
 
-        videoCard.addEventListener('mouseenter', () => {
-            video.play().catch(() => {});
-        });
-
-        videoCard.addEventListener('mouseleave', () => {
-            video.pause();
-        });
-    });
+    window.setTimeout(() => {
+        openProductModal(categoryKey);
+    }, 90);
 }
 
 function initializeSmoothScroll() {
@@ -566,6 +565,32 @@ function initializeSmoothScroll() {
         link.addEventListener('click', event => {
             const href = link.getAttribute('href');
             if (!href || href === '#') return;
+
+            const hash = href.replace('#', '').trim().toLowerCase();
+            const isTopCategory = TOP_LEVEL_CATEGORIES.includes(hash);
+
+            if (isTopCategory) {
+                event.preventDefault();
+
+                const catalogSection = document.querySelector('.categories');
+                if (catalogSection) {
+                    const headerHeight = document.querySelector('.header')?.offsetHeight || 0;
+                    const top = catalogSection.offsetTop - headerHeight;
+                    window.scrollTo({ top, behavior: 'smooth' });
+                }
+
+                window.setTimeout(() => {
+                    openProductModal(hash);
+                }, 260);
+                return;
+            }
+
+            if (hash === 'inicio') {
+                event.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
             const target = document.querySelector(href);
             if (!target) return;
 
@@ -857,6 +882,21 @@ function closeProductModal() {
     const modal = document.getElementById('productModal');
     modal?.classList.add('hidden');
     document.body.style.overflow = 'auto';
+
+    const activeCategory = String(state.activeCategory || '').trim().toLowerCase();
+    if (!TOP_LEVEL_CATEGORIES.includes(activeCategory)) return;
+
+    const card = document.querySelector(`.category-${activeCategory}`);
+    if (!(card instanceof HTMLElement)) return;
+
+    const headerHeight = document.querySelector('.header')?.offsetHeight || 0;
+    const top = card.getBoundingClientRect().top + window.scrollY - headerHeight - 18;
+    window.scrollTo({ top, behavior: 'smooth' });
+
+    card.classList.add('category-card-highlight');
+    window.setTimeout(() => {
+        card.classList.remove('category-card-highlight');
+    }, 900);
 }
 
 function parseJwt(token) {
@@ -1194,13 +1234,104 @@ function renderAdminProducts() {
                     </div>
                     <p>$${product.price.toFixed(2)} · Stock: ${product.stock}</p>
                     <div class="admin-actions">
-                        <input type="number" min="0" value="${product.stock}" onchange="adminUpdateStock('${product.id}', this.value)">
+                        <input type="number" min="0" step="0.01" value="${product.price.toFixed(2)}" onchange="adminUpdatePrice('${product.id}', this.value)" aria-label="Precio">
+                        <input type="number" min="0" value="${product.stock}" onchange="adminUpdateStock('${product.id}', this.value)" aria-label="Stock">
+                        <button class="btn-secondary" onclick="adminEditProduct('${product.id}')">Editar</button>
                         <button class="btn-secondary" onclick="adminDeleteProduct('${product.id}')">Eliminar</button>
                     </div>
                 </div>
             `).join('')}
         </div>
     `;
+}
+
+async function adminUpdatePrice(productId, priceValue) {
+    if (!isAdmin()) return;
+    const product = findProductById(productId);
+    if (!product) return;
+
+    const parsedPrice = Number.parseFloat(priceValue);
+    const price = Number.isFinite(parsedPrice) && parsedPrice >= 0 ? parsedPrice : 0;
+
+    try {
+        await upsertProductRecord({
+            ...product,
+            price,
+            updatedAt: Date.now()
+        });
+    } catch {
+        showNotification('No se pudo actualizar precio', 'error');
+        return;
+    }
+
+    state.cart = state.cart.map(item => item.id === productId ? { ...item, price } : item);
+    saveCart();
+    updateCartDisplay();
+
+    if (!state.cloud.enabled) {
+        renderAdminProducts();
+    }
+
+    showNotification('Precio actualizado', 'success');
+}
+
+function setAdminFormEditingState(editing, productName = '') {
+    const submitBtn = document.getElementById('adminSubmitBtn');
+    const cancelBtn = document.getElementById('adminCancelEditBtn');
+    if (submitBtn) {
+        submitBtn.textContent = editing ? 'Actualizar Producto' : 'Guardar Producto';
+    }
+    if (cancelBtn) {
+        cancelBtn.classList.toggle('hidden', !editing);
+    }
+
+    const title = document.querySelector('#adminPanel .section-subtitle');
+    if (title && editing) {
+        title.textContent = `Editando: ${productName}. Guarda cambios o cancela edición.`;
+    } else if (title) {
+        title.textContent = 'Solo la cuenta autorizada puede crear, editar cantidad y eliminar productos.';
+    }
+}
+
+function resetAdminForm() {
+    const form = document.getElementById('adminProductForm');
+    if (!form) return;
+
+    state.adminEditingProductId = '';
+    form.reset();
+    populateAdminCategories();
+    setAdminFormEditingState(false);
+}
+
+function adminEditProduct(productId) {
+    if (!isAdmin()) return;
+    const product = findProductById(productId);
+    if (!product) return;
+
+    state.adminEditingProductId = product.id;
+    const nameInput = document.getElementById('adminName');
+    const categoryInput = document.getElementById('adminCategory');
+    const priceInput = document.getElementById('adminPrice');
+    const stockInput = document.getElementById('adminStock');
+    const specsInput = document.getElementById('adminSpecs');
+    const descriptionInput = document.getElementById('adminDescription');
+
+    if (nameInput) nameInput.value = product.name || '';
+    if (categoryInput) categoryInput.value = product.category || '';
+    if (priceInput) priceInput.value = String(product.price ?? '');
+    if (stockInput) stockInput.value = String(product.stock ?? 0);
+    if (specsInput) specsInput.value = product.specs || '';
+    if (descriptionInput) descriptionInput.value = product.description || '';
+
+    const imageInput = document.getElementById('adminImage');
+    if (imageInput instanceof HTMLInputElement) {
+        imageInput.value = '';
+    }
+
+    setAdminFormEditingState(true, product.name || 'Producto');
+
+    const form = document.getElementById('adminProductForm');
+    form?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function adminUpdateStock(productId, stockValue) {
@@ -1263,7 +1394,12 @@ async function adminDeleteProduct(productId) {
 
 function initializeAdminPanel() {
     const form = document.getElementById('adminProductForm');
+    const cancelEditBtn = document.getElementById('adminCancelEditBtn');
     populateAdminCategories();
+
+    cancelEditBtn?.addEventListener('click', () => {
+        resetAdminForm();
+    });
 
     form?.addEventListener('submit', async event => {
         event.preventDefault();
@@ -1293,8 +1429,15 @@ function initializeAdminPanel() {
             }
         }
 
+        const currentEditingProduct = state.adminEditingProductId ? findProductById(state.adminEditingProductId) : null;
+        const shouldUpdate = !!currentEditingProduct;
+
+        if (!imageFiles.length && currentEditingProduct) {
+            images = getProductImages(currentEditingProduct);
+        }
+
         const newProduct = normalizeProduct({
-            id: `prod-${Date.now()}`,
+            id: shouldUpdate ? currentEditingProduct.id : `prod-${Date.now()}`,
             name,
             category,
             price,
@@ -1325,8 +1468,8 @@ function initializeAdminPanel() {
             renderAdminProducts();
         }
 
-        form.reset();
-        showNotification('Producto guardado correctamente', 'success');
+        resetAdminForm();
+        showNotification(shouldUpdate ? 'Producto actualizado correctamente' : 'Producto guardado correctamente', 'success');
     });
 }
 
@@ -1364,6 +1507,7 @@ function showNotification(message, type) {
 }
 
 window.openProductModal = openProductModal;
+window.handleCategoryCardClick = handleCategoryCardClick;
 window.closeProductModal = closeProductModal;
 window.openProductDetail = openProductDetail;
 window.openProductDetailFromSearch = openProductDetailFromSearch;
@@ -1372,6 +1516,8 @@ window.removeFromCart = removeFromCart;
 window.updateQuantity = updateQuantity;
 window.adminDeleteProduct = adminDeleteProduct;
 window.adminUpdateStock = adminUpdateStock;
+window.adminUpdatePrice = adminUpdatePrice;
+window.adminEditProduct = adminEditProduct;
 
 window.addEventListener('click', event => {
     const modal = document.getElementById('productModal');
@@ -1380,7 +1526,6 @@ window.addEventListener('click', event => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     initializeState();
-    initializeCategoryVideo();
     initializeSmoothScroll();
     initializeSearch();
     initializeCart();

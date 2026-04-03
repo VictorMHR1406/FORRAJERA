@@ -123,26 +123,41 @@ img, video{ max-width:100%; height:auto; }
 .benefit-card p{ margin:0; font-size:14px; color:var(--muted); line-height:1.45; }
 .catalog-cta-wrap{ text-align:center; margin-top:20px; }
 
-/* Categories section with background video */
+/* Categories section */
 .categories{ position:relative; overflow:hidden; }
 
 .categories .container{ position:relative; isolation:isolate; }
 
 /* Categories grid */
-.categories-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:18px; margin-top:30px; position:relative; z-index:1; }
-.category-card{ background:var(--surface); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); transition:var(--t-fast); display:flex; flex-direction:column; gap:12px; position:relative; }
+.categories-grid{ display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:14px; margin-top:30px; position:relative; z-index:1; align-items:stretch; isolation:isolate; }
+.category-card{ background:var(--surface); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); border:1px solid var(--border); transition:var(--t-fast); display:flex; flex-direction:column; gap:12px; position:relative; z-index:1; }
 .category-card[role="button"]{ cursor:pointer; }
-.category-card:hover{ transform:translateY(-12px) scale(1.08); box-shadow:  0 12px 32px rgba(79,138,99,0.16); }
+.category-card:hover,
+.category-card:focus-within{ transform:translateY(-12px) scale(1.08); box-shadow:0 12px 32px rgba(79,138,99,0.16); z-index:30; }
 
-/* Video background only for specific category card */
-.category-card-video{ overflow:hidden; position:relative; min-height:280px; }
-.category-bg-video{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1; opacity:0.85; transition:all 0.3s ease; }
-.category-card-video:hover .category-bg-video{ opacity:1; transform:scale(1.05); }
+.category-card-video{ overflow:hidden; position:relative; min-height:280px; aspect-ratio:4/5; }
+.category-cover{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:1; transition:transform 260ms ease; filter:saturate(1.02) contrast(1.03); }
+.category-card-video::after{ content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background:linear-gradient(180deg, rgba(0,0,0,0.22) 8%, rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.42) 100%); }
 .category-card-video .category-card-content{ position:absolute; bottom:20px; left:20px; right:20px; z-index:2; display:flex; flex-direction:column; gap:12px; align-items:center; text-align:center; }
 .category-card::before{ content:''; width:6px; height:46px; background:var(--accent-gradient); border-radius:6px; display:block; margin-bottom:6px; }
 .category-card-video::before{ display:none; }
 .video-title{ position:absolute; top:16px; left:0; right:0; z-index:3; margin:0; font-size:16px; font-weight:800; color:#fff; text-align:center; text-shadow:2px 2px 8px rgba(0,0,0,0.7); }
 .category-card-video .category-card-content p{ color:#fff; text-shadow:1px 1px 6px rgba(0,0,0,0.8); font-weight:600; }
+.category-card-video:hover .category-cover{ transform:scale(1.04); }
+.category-card-clicked{ transform:translateY(-8px) scale(1.05) !important; box-shadow:0 16px 36px rgba(79,138,99,0.2) !important; }
+.category-card-highlight{ animation:categoryPulse 0.9s ease; }
+
+@keyframes categoryPulse {
+  0% { box-shadow:0 0 0 0 rgba(79,138,99,0.45); transform:translateY(-2px) scale(1.01); }
+  50% { box-shadow:0 0 0 12px rgba(79,138,99,0.0); transform:translateY(-6px) scale(1.03); }
+  100% { box-shadow:0 8px 24px rgba(18,33,23,0.08); transform:none; }
+}
+
+.category-agroquimicos .category-cover{ object-position:center 42%; }
+.category-veterinaria .category-cover{ object-position:center 38%; }
+.category-alimentos .category-cover{ object-position:center 40%; }
+.category-forrajes .category-cover{ object-position:center 45%; }
+.category-accesorios .category-cover{ object-position:center 46%; }
 .category-icon{ width:56px; height:56px; border-radius:8px; background:linear-gradient(135deg,var(--accent), #f1f5ef); display:flex; align-items:center; justify-content:center; color:var(--accent-strong); font-size:20px; box-shadow: 0 8px 20px rgba(79,138,99,0.06); }
 .category-card h3{ margin:0; font-size:16px; font-weight:800; }
 .category-card p{ margin:0; color:var(--muted); font-size:14px; }
@@ -284,6 +299,7 @@ img, video{ max-width:100%; height:auto; }
 
 .admin-form{ background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:16px; display:grid; gap:10px; margin-bottom:18px; }
 .admin-form input, .admin-form select, .admin-form textarea{ width:100%; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:14px; }
+.admin-form-actions{ display:flex; gap:10px; flex-wrap:wrap; }
 .admin-help-text{ color:var(--muted); font-size:12px; margin-top:-4px; }
 .admin-products-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
 .admin-product-item{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; box-shadow:var(--shadow); }
@@ -294,11 +310,12 @@ img, video{ max-width:100%; height:auto; }
 .admin-product-item h4{ margin:0 0 6px; }
 .admin-product-item p{ margin:0 0 6px; color:var(--muted); font-size:13px; }
 .admin-actions{ display:flex; gap:8px; align-items:center; }
-.admin-actions input{ width:88px; border:1px solid var(--border); border-radius:8px; padding:6px 8px; }
+.admin-actions input{ width:78px; border:1px solid var(--border); border-radius:8px; padding:6px 8px; }
 
 @media (max-width:1200px){
   .container{ max-width:1024px; }
   .header .container{ max-width:1040px; }
+  .categories-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; }
 }
 
 @media (max-width:1024px){
@@ -319,6 +336,12 @@ img, video{ max-width:100%; height:auto; }
   .google-signin-btn{ width:100%; margin-left:0; justify-content:center; text-align:center; }
   .google-login-btn{ width:100%; max-width:260px; justify-content:center; }
   .categories-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .categories-grid > .category-card:nth-child(5):last-child{
+    grid-column:1 / -1;
+    max-width:300px;
+    justify-self:center;
+    width:100%;
+  }
   .benefits-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .products-list{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
   .contact-content{ gap:24px; }
@@ -399,5 +422,4 @@ img, video{ max-width:100%; height:auto; }
   .category-card:hover,
   .product-detail-card:hover,
   .btn:hover{ transform:none; }
-  .category-card-video:hover .category-bg-video{ transform:none; }
 }
