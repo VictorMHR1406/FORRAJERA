@@ -68,6 +68,9 @@ const IMAGE_OPTIMIZATION = {
     initialQuality: 0.82,
     minQuality: 0.5,
     qualityStep: 0.08,
+    resizeStep: 0.85,
+    minWidth: 640,
+    minHeight: 640,
     targetProductBytesCloud: 900 * 1024
 };
 
@@ -432,6 +435,16 @@ function drawImageToDataURL(image, mimeType, quality, width, height) {
     return canvas.toDataURL(mimeType, quality);
 }
 
+function estimateDataUrlBytes(dataUrl = '') {
+    const value = String(dataUrl || '');
+    const commaIndex = value.indexOf(',');
+    if (commaIndex < 0) return value.length;
+
+    const base64 = value.slice(commaIndex + 1);
+    const padding = base64.endsWith('==') ? 2 : (base64.endsWith('=') ? 1 : 0);
+    return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+}
+
 async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
     const isImage = String(file?.type || '').startsWith('image/');
     if (!isImage) return fileToDataURL(file);
@@ -443,12 +456,36 @@ async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
     const width = Math.max(1, Math.round(originalWidth * scale));
     const height = Math.max(1, Math.round(originalHeight * scale));
 
+    const targetBytes = Number(options?.targetBytes || 0);
+    let currentWidth = width;
+    let currentHeight = height;
     let quality = options.initialQuality;
-    let dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, width, height);
+    let dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, currentWidth, currentHeight);
+    let passes = 0;
 
-    while (quality > options.minQuality && dataUrl.length > file.size * 1.35) {
-        quality = Math.max(options.minQuality, quality - options.qualityStep);
-        dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, width, height);
+    const isWithinSizeGoal = currentDataUrl => {
+        if (targetBytes > 0) {
+            return estimateDataUrlBytes(currentDataUrl) <= targetBytes;
+        }
+        return currentDataUrl.length <= file.size * 1.35;
+    };
+
+    while (!isWithinSizeGoal(dataUrl) && passes < 24) {
+        if (quality > options.minQuality) {
+            quality = Math.max(options.minQuality, quality - options.qualityStep);
+        } else {
+            const nextWidth = Math.max(options.minWidth, Math.round(currentWidth * options.resizeStep));
+            const nextHeight = Math.max(options.minHeight, Math.round(currentHeight * options.resizeStep));
+            const canResize = nextWidth < currentWidth || nextHeight < currentHeight;
+            if (!canResize) break;
+
+            currentWidth = nextWidth;
+            currentHeight = nextHeight;
+            quality = options.initialQuality;
+        }
+
+        dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, currentWidth, currentHeight);
+        passes += 1;
     }
 
     return dataUrl;
@@ -1469,24 +1506,10 @@ function initializeAdminPanel() {
             return;
         }
 
-        let images = [];
-        if (imageFiles.length) {
-            try {
-                images = await Promise.all(imageFiles.map(file => fileToOptimizedDataURL(file)));
-            } catch {
-                showNotification('No se pudo leer una de las imagenes seleccionadas', 'error');
-                return;
-            }
-        }
-
         const currentEditingProduct = state.adminEditingProductId ? findProductById(state.adminEditingProductId) : null;
         const shouldUpdate = !!currentEditingProduct;
 
-        if (!imageFiles.length && currentEditingProduct) {
-            images = getProductImages(currentEditingProduct);
-        }
-
-        const newProduct = normalizeProduct({
+        const baselineProduct = normalizeProduct({
             id: shouldUpdate ? currentEditingProduct.id : `prod-${Date.now()}`,
             name,
             category: categories[0],
@@ -1495,15 +1518,46 @@ function initializeAdminPanel() {
             stock,
             specs,
             description,
-            image: images[0] || '',
-            images,
+            image: '',
+            images: [],
             updatedAt: Date.now()
+        });
+
+        let images = [];
+        if (imageFiles.length) {
+            try {
+                const nonImageBytes = estimateObjectBytes(baselineProduct);
+                const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (2 * 1024));
+                const targetBytesPerImage = Math.max(48 * 1024, Math.floor(bytesAvailableForImages / imageFiles.length));
+
+                images = await Promise.all(
+                    imageFiles.map(file => fileToOptimizedDataURL(file, {
+                        ...IMAGE_OPTIMIZATION,
+                        targetBytes: targetBytesPerImage
+                    }))
+                );
+            } catch {
+                showNotification('No se pudo leer una de las imagenes seleccionadas', 'error');
+                return;
+            }
+        }
+
+        if (!imageFiles.length && currentEditingProduct) {
+            images = getProductImages(currentEditingProduct);
+        }
+
+        const newProduct = normalizeProduct({
+            ...baselineProduct,
+            image: images[0] || '',
+            images
         });
 
         if (state.cloud.enabled) {
             const payloadBytes = estimateObjectBytes(newProduct);
             if (payloadBytes > IMAGE_OPTIMIZATION.targetProductBytesCloud) {
-                showNotification('Demasiadas fotos para Firestore en un solo producto. Sube menos imagenes.', 'error');
+                const payloadKb = Math.round(payloadBytes / 1024);
+                const limitKb = Math.round(IMAGE_OPTIMIZATION.targetProductBytesCloud / 1024);
+                showNotification(`La foto pesa demasiado para Firestore (${payloadKb}KB/${limitKb}KB). Usa una imagen mas ligera o menor resolucion.`, 'error');
                 return;
             }
         }
