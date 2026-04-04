@@ -621,6 +621,19 @@ function getImageUploadErrorMessage(error) {
     return 'No se pudo procesar/subir una de las imágenes seleccionadas.';
 }
 
+function shouldFallbackToInlineImages(error) {
+    const code = String(error?.code || '').toLowerCase();
+    const message = String(error?.message || '').toLowerCase();
+
+    if (code.includes('storage/no-default-bucket')) return true;
+    if (code.includes('storage/quota-exceeded')) return true;
+    if (code.includes('storage/project-not-found')) return true;
+    if (code.includes('storage/unknown') && /billing|plan|upgrade/.test(message)) return true;
+    if (/billing|plan|upgrade|no-default-bucket/.test(message)) return true;
+
+    return false;
+}
+
 function getProductSaveErrorMessage(error) {
     const code = String(error?.code || '');
     const message = String(error?.message || '');
@@ -1651,21 +1664,36 @@ function initializeAdminPanel() {
 
         let images = [];
         if (imageFiles.length) {
+            const buildInlineImages = async files => {
+                const nonImageBytes = estimateObjectBytes(baselineProduct);
+                const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (8 * 1024));
+                // El campo `image` repite images[0], por lo que el primer slot cuesta el doble.
+                // Dividir entre (n + 1) reparte el presupuesto considerando esa duplicación.
+                const targetBytesPerImage = Math.max(48 * 1024, Math.floor(bytesAvailableForImages / (files.length + 1)));
+
+                return Promise.all(
+                    files.map(file => fileToOptimizedDataURL(file, {
+                        ...IMAGE_OPTIMIZATION,
+                        targetBytes: targetBytesPerImage
+                    }))
+                );
+            };
+
             try {
                 const canUseStorage = state.cloud.enabled && state.cloud.storage && state.cloud.storageApi;
                 if (canUseStorage) {
-                    images = await uploadProductImagesToCloud(baselineProduct.id, imageFiles);
+                    try {
+                        images = await uploadProductImagesToCloud(baselineProduct.id, imageFiles);
+                    } catch (storageError) {
+                        if (shouldFallbackToInlineImages(storageError)) {
+                            images = await buildInlineImages(imageFiles);
+                            showNotification('Storage no disponible en este proyecto. Se uso modo compatible para guardar la foto.', 'success');
+                        } else {
+                            throw storageError;
+                        }
+                    }
                 } else {
-                    const nonImageBytes = estimateObjectBytes(baselineProduct);
-                    const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (8 * 1024));
-                    const targetBytesPerImage = Math.max(48 * 1024, Math.floor(bytesAvailableForImages / imageFiles.length));
-
-                    images = await Promise.all(
-                        imageFiles.map(file => fileToOptimizedDataURL(file, {
-                            ...IMAGE_OPTIMIZATION,
-                            targetBytes: targetBytesPerImage
-                        }))
-                    );
+                    images = await buildInlineImages(imageFiles);
                 }
             } catch (error) {
                 showNotification(getImageUploadErrorMessage(error), 'error');
