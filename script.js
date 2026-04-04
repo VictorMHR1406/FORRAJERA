@@ -65,12 +65,13 @@ const TOP_LEVEL_CATEGORIES = ['agroquimicos', 'veterinaria', 'alimentos', 'forra
 const IMAGE_OPTIMIZATION = {
     maxWidth: 1280,
     maxHeight: 1280,
-    initialQuality: 0.82,
-    minQuality: 0.5,
-    qualityStep: 0.08,
-    resizeStep: 0.85,
-    minWidth: 640,
-    minHeight: 640,
+    outputMimeType: 'image/webp',
+    initialQuality: 0.8,
+    minQuality: 0.28,
+    qualityStep: 0.06,
+    resizeStep: 0.78,
+    minWidth: 320,
+    minHeight: 320,
     targetProductBytesCloud: 900 * 1024
 };
 
@@ -450,7 +451,8 @@ async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
     let currentWidth = width;
     let currentHeight = height;
     let quality = options.initialQuality;
-    let dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, currentWidth, currentHeight);
+    const outputMimeType = String(options.outputMimeType || 'image/jpeg');
+    let dataUrl = drawImageToDataURL(image, outputMimeType, quality, currentWidth, currentHeight);
     let passes = 0;
 
     const isWithinSizeGoal = currentDataUrl => {
@@ -462,7 +464,7 @@ async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
         return currentDataUrl.length <= file.size * 1.35;
     };
 
-    while (!isWithinSizeGoal(dataUrl) && passes < 24) {
+    while (!isWithinSizeGoal(dataUrl) && passes < 60) {
         if (quality > options.minQuality) {
             quality = Math.max(options.minQuality, quality - options.qualityStep);
         } else {
@@ -476,7 +478,7 @@ async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
             quality = options.initialQuality;
         }
 
-        dataUrl = drawImageToDataURL(image, 'image/jpeg', quality, currentWidth, currentHeight);
+        dataUrl = drawImageToDataURL(image, outputMimeType, quality, currentWidth, currentHeight);
         passes += 1;
     }
 
@@ -1519,7 +1521,7 @@ function initializeAdminPanel() {
         if (imageFiles.length) {
             try {
                 const nonImageBytes = estimateObjectBytes(baselineProduct);
-                const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (2 * 1024));
+                const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (8 * 1024));
                 const targetBytesPerImage = Math.max(48 * 1024, Math.floor(bytesAvailableForImages / imageFiles.length));
 
                 images = await Promise.all(
