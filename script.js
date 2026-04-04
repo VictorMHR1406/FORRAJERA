@@ -435,16 +435,6 @@ function drawImageToDataURL(image, mimeType, quality, width, height) {
     return canvas.toDataURL(mimeType, quality);
 }
 
-function estimateDataUrlBytes(dataUrl = '') {
-    const value = String(dataUrl || '');
-    const commaIndex = value.indexOf(',');
-    if (commaIndex < 0) return value.length;
-
-    const base64 = value.slice(commaIndex + 1);
-    const padding = base64.endsWith('==') ? 2 : (base64.endsWith('=') ? 1 : 0);
-    return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
-}
-
 async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
     const isImage = String(file?.type || '').startsWith('image/');
     if (!isImage) return fileToDataURL(file);
@@ -465,7 +455,9 @@ async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
 
     const isWithinSizeGoal = currentDataUrl => {
         if (targetBytes > 0) {
-            return estimateDataUrlBytes(currentDataUrl) <= targetBytes;
+            // Firestore stores the base64 text, so we must measure encoded string size,
+            // not decoded image bytes.
+            return currentDataUrl.length <= targetBytes;
         }
         return currentDataUrl.length <= file.size * 1.35;
     };
