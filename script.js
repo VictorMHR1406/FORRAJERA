@@ -87,7 +87,9 @@ const state = {
         initError: null,
         db: null,
         auth: null,
+        storage: null,
         firestore: null,
+        storageApi: null,
         authApi: null,
         unsubscribeProducts: null,
         unsubscribeAuth: null
@@ -254,10 +256,23 @@ async function initializeCloudProductsSync() {
         const db = getFirestore(app);
         const auth = getAuth(app);
 
+        let storage = null;
+        let storageApi = null;
+        try {
+            const { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } = await import('https://www.gstatic.com/firebasejs/11.7.1/firebase-storage.js');
+            storage = getStorage(app);
+            storageApi = { ref, uploadBytes, getDownloadURL, deleteObject };
+        } catch {
+            storage = null;
+            storageApi = null;
+        }
+
         state.cloud.enabled = true;
         state.cloud.db = db;
         state.cloud.auth = auth;
+        state.cloud.storage = storage;
         state.cloud.firestore = { collection, doc, setDoc, deleteDoc, onSnapshot };
+        state.cloud.storageApi = storageApi;
         state.cloud.authApi = { GoogleAuthProvider, signInWithPopup, signOut };
         renderAuthState();
 
@@ -287,7 +302,9 @@ async function initializeCloudProductsSync() {
         state.cloud.initError = error;
         state.cloud.db = null;
         state.cloud.auth = null;
+        state.cloud.storage = null;
         state.cloud.firestore = null;
+        state.cloud.storageApi = null;
         state.cloud.authApi = null;
         state.cloud.unsubscribeProducts = null;
         state.cloud.unsubscribeAuth = null;
@@ -325,6 +342,23 @@ async function deleteProductRecord(productId) {
     if (state.cloud.enabled && state.cloud.db && state.cloud.firestore) {
         if (!state.cloud.auth?.currentUser) {
             throw new Error('Debes iniciar sesión para eliminar en la nube');
+        }
+
+        const existingProduct = findProductById(productId);
+        if (existingProduct && state.cloud.storage && state.cloud.storageApi) {
+            const imageUrls = getProductImages(existingProduct)
+                .filter(imageUrl => /firebasestorage\.googleapis\.com|^gs:\/\//i.test(String(imageUrl || '')));
+
+            if (imageUrls.length) {
+                const { ref, deleteObject } = state.cloud.storageApi;
+                await Promise.all(imageUrls.map(async imageUrl => {
+                    try {
+                        await deleteObject(ref(state.cloud.storage, imageUrl));
+                    } catch {
+                        // Ignora borrados fallidos para no bloquear eliminación del producto.
+                    }
+                }));
+            }
         }
 
         const { doc, deleteDoc } = state.cloud.firestore;
@@ -436,6 +470,33 @@ function drawImageToDataURL(image, mimeType, quality, width, height) {
     return canvas.toDataURL(mimeType, quality);
 }
 
+function dataURLToBlob(dataUrl = '') {
+    const value = String(dataUrl || '');
+    const matches = value.match(/^data:(.*?);base64,(.*)$/);
+    if (!matches) throw new Error('No fue posible procesar la imagen optimizada');
+
+    const mimeType = matches[1] || 'application/octet-stream';
+    const base64 = matches[2] || '';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+
+    return new Blob([bytes], { type: mimeType });
+}
+
+function sanitizeStorageSegment(value = '') {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\.[a-z0-9]+$/i, '')
+        .replace(/[^a-z0-9-_]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'foto';
+}
+
 async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
     const isImage = String(file?.type || '').startsWith('image/');
     if (!isImage) return fileToDataURL(file);
@@ -487,6 +548,77 @@ async function fileToOptimizedDataURL(file, options = IMAGE_OPTIMIZATION) {
 
 function estimateObjectBytes(value) {
     return new TextEncoder().encode(JSON.stringify(value)).length;
+}
+
+async function uploadProductImagesToCloud(productId, imageFiles) {
+    if (!state.cloud.enabled || !state.cloud.storage || !state.cloud.storageApi) {
+        throw new Error('Firebase Storage no está disponible en este momento.');
+    }
+
+    if (!state.cloud.auth?.currentUser) {
+        throw new Error('Debes iniciar sesión para subir imágenes a la nube.');
+    }
+
+    const { ref, uploadBytes, getDownloadURL } = state.cloud.storageApi;
+    const targetBytesPerImage = Math.max(48 * 1024, Math.floor((IMAGE_OPTIMIZATION.targetProductBytesCloud - (8 * 1024)) / Math.max(1, imageFiles.length)));
+
+    const uploadTasks = imageFiles.map(async (file, index) => {
+        const optimizedDataUrl = await fileToOptimizedDataURL(file, {
+            ...IMAGE_OPTIMIZATION,
+            targetBytes: targetBytesPerImage
+        });
+        const blob = dataURLToBlob(optimizedDataUrl);
+        const extension = blob.type.includes('webp') ? 'webp' : 'jpg';
+        const safeName = sanitizeStorageSegment(file?.name || `foto-${index + 1}`);
+        const filename = `${Date.now()}-${index + 1}-${safeName}.${extension}`;
+        const storageRef = ref(state.cloud.storage, `products/${productId}/${filename}`);
+
+        await uploadBytes(storageRef, blob, {
+            contentType: blob.type || 'image/webp',
+            customMetadata: {
+                uploadedBy: String(state.cloud.auth.currentUser?.uid || '')
+            }
+        });
+
+        return getDownloadURL(storageRef);
+    });
+
+    return Promise.all(uploadTasks);
+}
+
+function getImageUploadErrorMessage(error) {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '');
+
+    if (code.includes('storage/unauthorized')) {
+        return 'Firebase Storage rechazó la subida por permisos. Revisa Storage Rules para admins.';
+    }
+
+    if (code.includes('storage/unauthenticated')) {
+        return 'Debes iniciar sesión con la cuenta admin para subir imágenes.';
+    }
+
+    if (code.includes('storage/quota-exceeded')) {
+        return 'Se alcanzó la cuota de Firebase Storage. Libera espacio o actualiza plan.';
+    }
+
+    if (code.includes('storage/no-default-bucket')) {
+        return 'Firebase Storage no esta configurado en este proyecto. Activalo o usa una imagen mas ligera.';
+    }
+
+    if (code.includes('storage/retry-limit-exceeded') || code.includes('storage/canceled')) {
+        return 'La subida de imagen no se completó. Intenta nuevamente.';
+    }
+
+    if (/billing|plan|upgrade/i.test(message)) {
+        return 'Firebase Storage en este proyecto requiere plan de pago. Usa imagen mas ligera o activa Storage con facturacion.';
+    }
+
+    if (/storage/i.test(message)) {
+        return 'No se pudo subir la imagen a Firebase Storage. Revisa reglas y conexión.';
+    }
+
+    return 'No se pudo procesar/subir una de las imágenes seleccionadas.';
 }
 
 function getProductSaveErrorMessage(error) {
@@ -1520,18 +1652,23 @@ function initializeAdminPanel() {
         let images = [];
         if (imageFiles.length) {
             try {
-                const nonImageBytes = estimateObjectBytes(baselineProduct);
-                const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (8 * 1024));
-                const targetBytesPerImage = Math.max(48 * 1024, Math.floor(bytesAvailableForImages / imageFiles.length));
+                const canUseStorage = state.cloud.enabled && state.cloud.storage && state.cloud.storageApi;
+                if (canUseStorage) {
+                    images = await uploadProductImagesToCloud(baselineProduct.id, imageFiles);
+                } else {
+                    const nonImageBytes = estimateObjectBytes(baselineProduct);
+                    const bytesAvailableForImages = Math.max(64 * 1024, IMAGE_OPTIMIZATION.targetProductBytesCloud - nonImageBytes - (8 * 1024));
+                    const targetBytesPerImage = Math.max(48 * 1024, Math.floor(bytesAvailableForImages / imageFiles.length));
 
-                images = await Promise.all(
-                    imageFiles.map(file => fileToOptimizedDataURL(file, {
-                        ...IMAGE_OPTIMIZATION,
-                        targetBytes: targetBytesPerImage
-                    }))
-                );
-            } catch {
-                showNotification('No se pudo leer una de las imagenes seleccionadas', 'error');
+                    images = await Promise.all(
+                        imageFiles.map(file => fileToOptimizedDataURL(file, {
+                            ...IMAGE_OPTIMIZATION,
+                            targetBytes: targetBytesPerImage
+                        }))
+                    );
+                }
+            } catch (error) {
+                showNotification(getImageUploadErrorMessage(error), 'error');
                 return;
             }
         }
@@ -1548,7 +1685,8 @@ function initializeAdminPanel() {
 
         if (state.cloud.enabled) {
             const payloadBytes = estimateObjectBytes(newProduct);
-            if (payloadBytes > IMAGE_OPTIMIZATION.targetProductBytesCloud) {
+            const hasInlineImages = getProductImages(newProduct).some(imageUrl => String(imageUrl || '').startsWith('data:'));
+            if (hasInlineImages && payloadBytes > IMAGE_OPTIMIZATION.targetProductBytesCloud) {
                 const payloadKb = Math.round(payloadBytes / 1024);
                 const limitKb = Math.round(IMAGE_OPTIMIZATION.targetProductBytesCloud / 1024);
                 showNotification(`La foto pesa demasiado para Firestore (${payloadKb}KB/${limitKb}KB). Usa una imagen mas ligera o menor resolucion.`, 'error');
