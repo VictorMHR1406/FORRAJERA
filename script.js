@@ -1494,11 +1494,7 @@ async function adminUpdatePrice(productId, priceValue) {
     state.cart = state.cart.map(item => item.id === productId ? { ...item, price } : item);
     saveCart();
     updateCartDisplay();
-
-    if (!state.cloud.enabled) {
-        renderAdminProducts();
-    }
-
+    renderAdminProducts();
     showNotification('Precio actualizado', 'success');
 }
 
@@ -1589,11 +1585,7 @@ async function adminUpdateStock(productId, stockValue) {
 
     saveCart();
     updateCartDisplay();
-
-    if (!state.cloud.enabled) {
-        renderAdminProducts();
-    }
-
+    renderAdminProducts();
     showNotification('Cantidad actualizada', 'success');
 }
 
@@ -1609,11 +1601,7 @@ async function adminDeleteProduct(productId) {
 
     state.cart = state.cart.filter(item => item.id !== productId);
     saveCart();
-
-    if (!state.cloud.enabled) {
-        renderAdminProducts();
-    }
-
+    renderAdminProducts();
     updateCartDisplay();
     showNotification('Producto eliminado', 'success');
 }
@@ -1729,10 +1717,7 @@ function initializeAdminPanel() {
             return;
         }
 
-        if (!state.cloud.enabled) {
-            renderAdminProducts();
-        }
-
+        renderAdminProducts();
         resetAdminForm();
         showNotification(shouldUpdate ? 'Producto actualizado correctamente' : 'Producto guardado correctamente', 'success');
     });
