@@ -1444,9 +1444,30 @@ function renderAdminProducts() {
         return;
     }
 
+    const searchEl = document.getElementById('adminSearchInput');
+    const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+    const products = query
+        ? state.products.filter(p =>
+            p.name.toLowerCase().includes(query) ||
+            getProductCategoryLabels(p).join(' ').toLowerCase().includes(query)
+          )
+        : state.products;
+
+    const countEl = document.getElementById('adminSearchCount');
+    if (countEl) {
+        countEl.textContent = query
+            ? `${products.length} de ${state.products.length} producto${state.products.length !== 1 ? 's' : ''}`
+            : `${state.products.length} producto${state.products.length !== 1 ? 's' : ''}`;
+    }
+
+    if (!products.length) {
+        container.innerHTML = `<p class="admin-search-empty">No se encontraron productos para "<strong>${sanitizeText(query)}</strong>".</p>`;
+        return;
+    }
+
     container.innerHTML = `
         <div class="admin-products-grid">
-            ${state.products.map(product => `
+            ${products.map(product => `
                 <div class="admin-product-item">
                     <div class="admin-product-header">
                         ${renderProductImageHTML(product, 'admin-product-thumb-wrap', 'admin-product-thumb', 'admin-product-thumb-placeholder')}

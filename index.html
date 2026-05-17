@@ -230,6 +230,14 @@
                 </div>
             </form>
 
+            <div class="admin-search-wrap">
+                <span class="admin-search-icon">🔍</span>
+                <input type="text" id="adminSearchInput" class="admin-search-input"
+                       placeholder="Buscar producto por nombre o categoría..."
+                       oninput="renderAdminProducts()">
+                <span id="adminSearchCount" class="admin-search-count"></span>
+            </div>
+
             <div id="adminProductsList" class="admin-products-list"></div>
         </div>
     </section>

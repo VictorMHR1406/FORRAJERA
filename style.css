@@ -1107,6 +1107,47 @@ img, video{ max-width:100%; height:auto; display:block; }
 .cart-footer .btn{ width: 100%; }
 
 /* ============ ADMIN PANEL ============ */
+/* ============ ADMIN SEARCH ============ */
+.admin-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 18px;
+  margin-bottom: 20px;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+.admin-search-wrap:focus-within {
+  border-color: var(--olive);
+  box-shadow: 0 0 0 3px rgba(90,107,59,0.12);
+}
+.admin-search-icon { font-size: 17px; flex-shrink: 0; }
+.admin-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+}
+.admin-search-input::placeholder { color: var(--muted); }
+.admin-search-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.admin-search-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 32px 0;
+  font-size: 15px;
+}
+
 .admin-form{
   background: var(--surface);
   border: 1px solid var(--border);
