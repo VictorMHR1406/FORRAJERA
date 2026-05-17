@@ -1,11 +1,10 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Forrajera Ruiz - Tienda integral para el campo, mascotas y agricultura. Calidad, confianza y servicio personalizado.">
     <title>Forrajera Ruiz - Agroquímicos, Veterinaria y Alimentos</title>
-    <link rel="stylesheet" href="style.css?v=20260403-16">
+    <link rel="stylesheet" href="style.css?v=20260516-01">
     <link rel="icon" href="LOGO.jpeg" type="image/jpeg">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -28,7 +27,7 @@
                     <li><a href="#veterinaria" class="nav-link">Veterinaria</a></li>
                     <li><a href="#alimentos" class="nav-link">Alimentos</a></li>
                     <li><a href="#forrajes" class="nav-link">Forrajes</a></li>
-                    <li><a href="#accesorios" class="nav-link">Accesorios para mascotas</a></li>
+                    <li><a href="#accesorios" class="nav-link">Mascotas</a></li>
                     <li><a href="#contacto" class="nav-link">Contacto</a></li>
                 </ul>
             </nav>
@@ -36,7 +35,7 @@
             <!-- CARRITO -->
             <div class="cart-container">
                 <button id="cartBtn" class="cart-btn">
-                    🛒 <span id="cartCount" class="cart-count">0</span>
+                    🛒 <span class="cart-label">Mi Pedido</span><span id="cartCount" class="cart-count">0</span>
                 </button>
                 <div id="cartDropdown" class="cart-dropdown hidden">
                     <div class="cart-content">
@@ -54,7 +53,50 @@
         </div>
     </header>
 
-    <!-- LOGIN CLIENTE / ADMIN -->
+    <!-- HERO SECTION (nuevo, editorial y cálido) -->
+    <section class="hero" id="inicio">
+        <div class="hero-decoration"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <div class="hero-eyebrow">Familia Ruiz · Tlacotepec, Puebla · +20 años</div>
+                    <h2 class="hero-title">
+                        Todo lo que tu <em>ganado, cultivo</em> y mascota necesitan.
+                    </h2>
+                    <p class="hero-subtitle">
+                        Tres generaciones acompañando al campo mexicano. Agroquímicos, alimentos balanceados, veterinaria, forrajes y accesorios — con asesoría real y precios honestos.
+                    </p>
+                    <div class="hero-cta">
+                        <button type="button" class="btn btn-primary" onclick="openProductModal('all')">🛒 Ver productos</button>
+                        <a href="#contacto" class="btn-secondary" style="text-decoration:none;">Contactarnos</a>
+                        <a href="https://wa.me/2371056258" target="_blank" rel="noopener" class="btn-whatsapp-hero">
+                            💬 Escríbanos al WhatsApp
+                        </a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <strong>+20</strong>
+                            <span>Años de experiencia</span>
+                        </div>
+                        <div class="hero-stat">
+                            <strong>5</strong>
+                            <span>Categorías</span>
+                        </div>
+                        <div class="hero-stat">
+                            <strong>100%</strong>
+                            <span>Atención personal</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <img src="forrajes.jpg" alt="Forrajes de calidad Forrajera Ruiz" class="hero-visual-img">
+                    <p class="hero-badge">Tres generaciones sirviendo al campo de Puebla.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LOGIN CLIENTE / ADMIN (sin modificar, solo para mantener tu Firebase) -->
     <section class="auth-section">
         <div class="container">
             <div class="auth-card">
@@ -76,25 +118,63 @@
         </div>
     </section>
 
-    <!-- CATEGORÍAS PRINCIPALES -->
+    <!-- SECCIÓN ¿CÓMO COMPRAR? -->
+    <section class="how-to-buy">
+        <div class="container">
+            <div class="how-eyebrow">Fácil y rápido</div>
+            <h2 class="section-title">¿Cómo hacer su pedido?</h2>
+            <p class="section-subtitle">En tres pasos sencillos, sin complicaciones.</p>
+            <div class="how-steps">
+                <div class="how-step">
+                    <span class="how-step-icon">🔍</span>
+                    <div class="how-step-number">Paso 1</div>
+                    <h3>Explore los productos</h3>
+                    <p>Vea las categorías de abajo y encuentre lo que necesita para su ganado, cultivo o mascota.</p>
+                </div>
+                <div class="how-step-divider" aria-hidden="true">→</div>
+                <div class="how-step">
+                    <span class="how-step-icon">🛒</span>
+                    <div class="how-step-number">Paso 2</div>
+                    <h3>Arme su pedido</h3>
+                    <p>Agregue productos a "Mi Pedido" con un solo toque. Puede cambiar cantidades libremente.</p>
+                </div>
+                <div class="how-step-divider" aria-hidden="true">→</div>
+                <div class="how-step">
+                    <span class="how-step-icon">💬</span>
+                    <div class="how-step-number">Paso 3</div>
+                    <h3>Contáctenos por WhatsApp</h3>
+                    <p>Presione "Finalizar Compra" y le llegará un mensaje listo para enviar. ¡Nosotros le confirmamos!</p>
+                </div>
+            </div>
+            <div class="how-cta">
+                <a href="https://wa.me/2371056258" target="_blank" rel="noopener" class="btn btn-whatsapp">
+                    💬 ¿Tiene dudas? Escríbanos ya
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CATEGORÍAS PRINCIPALES (PROTAGONISTA - mosaico editorial) -->
     <section class="categories">
         <div class="container">
-            <h2 class="section-title">Nuestro Catálogo</h2>
+            <div class="categories-eyebrow">Nuestro catálogo</div>
+            <h2 class="section-title">Productos que cuidan tu campo</h2>
+            <p class="section-subtitle">Explora cada categoría. Productos seleccionados, marcas confiables y asesoría técnica incluida.</p>
             <div class="categories-grid">
                 <div class="category-card category-card-video category-agroquimicos" role="button" tabindex="0" onclick="handleCategoryCardClick('agroquimicos', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('agroquimicos', this);}">
                     <img src="agroquimicos.jpg" alt="Portada Agroquímicos" class="category-cover">
                     <h3 class="video-title">Agroquímicos</h3>
-                    <div class="category-card-content">
-                        <p>Fertilizantes, herbicidas y control de plagas.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('agroquimicos', this.closest('.category-card'))">Explorar</a>
+                    <div class="category-card-content" data-cat-title="Agroquímicos">
+                        <p>Fertilizantes, herbicidas y control de plagas para cultivos sanos y productivos.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('agroquimicos', this.closest('.category-card'))">Ver Agroquímicos</a>
                     </div>
                 </div>
                 <div class="category-card category-card-video category-veterinaria" role="button" tabindex="0" onclick="handleCategoryCardClick('veterinaria', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('veterinaria', this);}">
                     <img src="veterinaria.jpeg" alt="Portada Veterinaria" class="category-cover">
                     <h3 class="video-title">Veterinaria</h3>
-                    <div class="category-card-content">
-                        <p>Medicamentos y vacunas para salud animal.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('veterinaria', this.closest('.category-card'))">Explorar</a>
+                    <div class="category-card-content" data-cat-title="Veterinaria">
+                        <p>Medicamentos, vacunas y suplementos para la salud de tus animales.</p>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('veterinaria', this.closest('.category-card'))">Ver Veterinaria</a>
                     </div>
                 </div>
                 <div class="category-card category-card-video category-alimentos" role="button" tabindex="0" onclick="handleCategoryCardClick('alimentos', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('alimentos', this);}">
@@ -102,7 +182,7 @@
                     <h3 class="video-title">Alimentos</h3>
                     <div class="category-card-content">
                         <p>Balanceados, granos y materias primas.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('alimentos', this.closest('.category-card'))">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('alimentos', this.closest('.category-card'))">Ver Alimentos</a>
                     </div>
                 </div>
                 <div class="category-card category-card-video category-forrajes" role="button" tabindex="0" onclick="handleCategoryCardClick('forrajes', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('forrajes', this);}">
@@ -110,15 +190,15 @@
                     <h3 class="video-title">Forrajes</h3>
                     <div class="category-card-content">
                         <p>Pacas, alfalfa y forrajes para ganado.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('forrajes', this.closest('.category-card'))">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('forrajes', this.closest('.category-card'))">Ver Forrajes</a>
                     </div>
                 </div>
                 <div class="category-card category-card-video category-accesorios" role="button" tabindex="0" onclick="handleCategoryCardClick('accesorios', this)" onkeydown="if(event.key==='Enter' || event.key===' '){event.preventDefault(); handleCategoryCardClick('accesorios', this);}">
                     <img src="portadamascotas.jpeg" alt="Portada Accesorios Mascotas" class="category-cover">
-                    <h3 class="video-title">Accesorios Mascotas</h3>
+                    <h3 class="video-title">Mascotas</h3>
                     <div class="category-card-content">
                         <p>Correas, collares y pecheras resistentes.</p>
-                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('accesorios', this.closest('.category-card'))">Explorar</a>
+                        <a href="#" class="btn-small" onclick="event.preventDefault(); event.stopPropagation(); handleCategoryCardClick('accesorios', this.closest('.category-card'))">Ver Accesorios</a>
                     </div>
                 </div>
             </div>
@@ -167,12 +247,13 @@
     <!-- SECCIÓN POR QUÉ ELEGIR FORRAJERA RUIZ -->
     <section class="benefits">
         <div class="container">
-            <h2 class="section-title">¿Por Qué Elegir Forrajera Ruiz?</h2>
+            <h2 class="section-title">¿Por qué elegir Forrajera Ruiz?</h2>
+            <p class="section-subtitle" style="color: rgba(246,241,231,0.72);">Más que una tienda: un aliado del campo, comprometido con la calidad y el servicio.</p>
             <div class="benefits-grid">
                 <div class="benefit-card">
                     <div class="benefit-icon">✓</div>
                     <h3>Productos de Calidad</h3>
-                    <p>Proveedores seleccionados y productos certificados para garantizar la mejor performance.</p>
+                    <p>Proveedores seleccionados y productos certificados para garantizar el mejor rendimiento.</p>
                 </div>
                 <div class="benefit-card">
                     <div class="benefit-icon">✓</div>
@@ -196,8 +277,8 @@
     <!-- SECCIÓN CONTACTO -->
     <section id="contacto" class="contact">
         <div class="container">
-            <h2 class="section-title">¿Necesitas Más Información?</h2>
-            <p class="section-subtitle">Contáctanos ahora para asesoramiento personalizado</p>
+            <h2 class="section-title">¿Necesitas más información?</h2>
+            <p class="section-subtitle">Contáctanos para asesoramiento personalizado, lunes a viernes de 9AM a 7PM.</p>
             
             <div class="contact-content">
                 <div class="contact-info">
@@ -208,13 +289,17 @@
                     
                     <div class="contact-method">
                         <h3>📱 WhatsApp</h3>
-                        <p><a href="https://wa.me/2371056258" target="_blank" class="whatsapp-link">2371056258</a></p>
+                        <p><a href="https://wa.me/2371056258" target="_blank" class="whatsapp-link">237 105 6258</a></p>
                         <p class="small-text">Disponible de lunes a viernes 9AM - 7PM</p>
+                        <a href="https://wa.me/2371056258" target="_blank" rel="noopener"
+                           class="btn btn-whatsapp" style="margin-top:14px; text-decoration:none;">
+                            💬 Escribir por WhatsApp ahora
+                        </a>
                     </div>
 
                     <div class="contact-method">
                         <h3>📞 Teléfono</h3>
-                        <p><a href="tel:2371056258">2371056258</a></p>
+                        <p><a href="tel:2371056258">237 105 6258</a></p>
                     </div>
 
                     <div class="contact-method">
@@ -251,7 +336,12 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h4>Forrajera Ruiz</h4>
-                    <p>Calidad para tu ganado.</p>
+                    <p>Calidad para tu ganado — desde Tlacotepec, Puebla.</p>
+                    <div class="footer-info">
+                        <p class="footer-detail">📍 Calle 11 Sur #16, Segunda Centro, Tlacotepec de Benito Juárez, Pue.</p>
+                        <p class="footer-detail">🕐 Lunes a Viernes: 9:00 AM – 7:00 PM</p>
+                        <p class="footer-detail">📱 <a href="https://wa.me/2371056258">237 105 6258</a></p>
+                    </div>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -259,6 +349,16 @@
             </div>
         </div>
     </footer>
+
+    <!-- BOTÓN FLOTANTE WHATSAPP — siempre visible -->
+    <a href="https://wa.me/2371056258"
+       target="_blank" rel="noopener"
+       class="whatsapp-fab"
+       aria-label="Contactar por WhatsApp"
+       title="Escríbanos por WhatsApp">
+        <span class="whatsapp-fab-icon">💬</span>
+        <span class="whatsapp-fab-text">WhatsApp</span>
+    </a>
 
     <script src="script.js?v=20260404-23"></script>
 </body>
